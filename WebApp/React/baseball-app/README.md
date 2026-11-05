@@ -1,27 +1,48 @@
 # Baseball Club React App
 
-## Setup
+野球クラブの収入・備品を管理するReactアプリです。データの保存とログインにはSupabaseを使用します。
 
-1. In the Supabase project SQL Editor, run the migration in
-   `supabase/migrations/20261105160000_create_club_tables.sql`.
-2. Copy `.env.example` to `.env.local` in this directory and fill in the
-   Supabase project URL and publishable key:
+## 主な変更内容
+
+- 収入に名目を登録・表示できるようにしました。
+- 収入と備品の登録・編集・削除は管理者のみ可能です。権限は画面表示だけでなくSupabaseのRow Level Securityでも制限しています。
+- 収入・備品データはSupabase Databaseに保存します。
+- 公開URL: https://baseball-club-15wsg3uq7-susi007.vercel.app
+- GitHubの`main`ブランチへの変更はVercelからデプロイされます。
+
+## 初回設定
+
+1. SupabaseプロジェクトのSQL Editorで、`supabase/migrations/20261105160000_create_club_tables.sql`を実行します。まだテーブルやRLSポリシーを作成していない場合に必要です。
+2. このフォルダで`.env.example`を`.env.local`にコピーし、SupabaseプロジェクトのURLとPublishable Keyを設定します。
 
    ```dotenv
    VITE_SUPABASE_URL=https://your-project.supabase.co
    VITE_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
    ```
 
-3. Install dependencies and start the app:
+3. Supabase Authenticationで、アプリの公開URLをSite URLおよびRedirect URLsに設定します。
+4. 管理者アカウントをSupabase Authenticationに登録します。アプリとRLSポリシーでは`src/App.jsx`およびmigrationに記載されたメールアドレスを管理者として扱います。管理者を変更する場合は、両方の設定を一致させてください。
 
-   ```sh
-   npm install
-   npm run dev
-   ```
+## ローカルでの起動
 
-Authenticated users can view the records. The migration grants data changes
-only to `susi007garu@gmail.com`, enforced by Supabase row-level security.
-Update the policies in the migration if the administrator changes.
+Node.jsとnpmをインストールし、`.env.local`を設定した後、このフォルダで実行します。
 
-The migration creates the schema only. Existing records in the local
-PostgreSQL database must be exported and imported separately.
+```sh
+npm install
+npm run dev
+```
+
+本番ビルドの確認には次を実行します。
+
+```sh
+npm run lint
+npm run build
+```
+
+## Vercelへのデプロイ
+
+VercelプロジェクトはGitHubリポジトリ`susi007/baseball-club`の`main`ブランチに接続し、Root Directoryを`WebApp/React/baseball-app`に設定します。Build Commandは`npm run build`、Output Directoryは`dist`です。Vercelの環境変数に`VITE_SUPABASE_URL`と`VITE_SUPABASE_PUBLISHABLE_KEY`をProductionおよびPreview向けに設定してください。
+
+## データ移行について
+
+Migrationはテーブルと権限設定を作成します。従来のローカルPostgreSQLに保存されているデータは自動移行されないため、必要な場合は別途エクスポート・インポートしてください。

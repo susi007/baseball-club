@@ -338,7 +338,13 @@ function App() {
   })
 
   if (authLoading) {
-    return <p>ログイン状態を確認しています...</p>
+    return (
+      <main className="auth-page">
+        <p className="auth-loading" role="status">
+          ログイン状態を確認しています...
+        </p>
+      </main>
+    )
   }
 
   if (!user) {

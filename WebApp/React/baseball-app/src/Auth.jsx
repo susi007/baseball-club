@@ -38,58 +38,60 @@ export default function Auth() {
   }
 
   return (
-    <div className="container mt-5" style={{ maxWidth: '420px' }}>
-      <h2 className="mb-4 text-center">
-        {isSignUp ? '新規登録' : 'ログイン'}
-      </h2>
+    <main className="auth-page">
+      <section className="auth-card" aria-labelledby="auth-title">
+        <p className="auth-brand">BASEBALL CLUB</p>
+        <h1 className="auth-title" id="auth-title">
+          {isSignUp ? '新規登録' : 'ログイン'}
+        </h1>
+        <p className="auth-description">
+          野球クラブの収支・備品管理
+        </p>
 
-      <form onSubmit={handleSubmit}>
-        <div className="mb-3">
-          <label className="form-label">メールアドレス</label>
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <label htmlFor="auth-email">メールアドレス</label>
           <input
+            id="auth-email"
             type="email"
-            className="form-control"
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-        </div>
 
-        <div className="mb-3">
-          <label className="form-label">パスワード</label>
+          <label htmlFor="auth-password">パスワード</label>
           <input
+            id="auth-password"
             type="password"
-            className="form-control"
+            autoComplete={isSignUp ? 'new-password' : 'current-password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             minLength={6}
             required
           />
-        </div>
+
+          <button type="submit" className="auth-submit" disabled={loading}>
+            {loading ? '処理中...' : isSignUp ? '新規登録' : 'ログイン'}
+          </button>
+        </form>
+
+        {message && (
+          <p className="auth-message" role="status" aria-live="polite">
+            {message}
+          </p>
+        )}
 
         <button
-          type="submit"
-          className="btn btn-primary w-100"
-          disabled={loading}
+          type="button"
+          className="auth-toggle"
+          onClick={() => {
+            setIsSignUp(!isSignUp)
+            setMessage('')
+          }}
         >
-          {loading ? '処理中...' : isSignUp ? '新規登録' : 'ログイン'}
+          {isSignUp ? 'ログイン画面に戻る' : '新規アカウントを登録する'}
         </button>
-      </form>
-
-      {message && <p className="mt-3">{message}</p>}
-
-      <button
-        type="button"
-        className="btn btn-link w-100 mt-2"
-        onClick={() => {
-          setIsSignUp(!isSignUp)
-          setMessage('')
-        }}
-      >
-        {isSignUp
-          ? 'ログイン画面に戻る'
-          : '新規アカウントを登録する'}
-      </button>
-    </div>
+      </section>
+    </main>
   )
 }

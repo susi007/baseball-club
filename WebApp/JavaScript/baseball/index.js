@@ -83,6 +83,7 @@ incomeForm.addEventListener("submit", async function (event) {
     const formData = new FormData(incomeForm);
     const data = {
         date: formData.get("date"),
+        name: formData.get("name").trim(),
         amount: Number(formData.get("amount")),
         people: Number(formData.get("people"))
     };
@@ -222,6 +223,7 @@ function renderIncome() {
         const people = Number(record.people);
         [
             formatDate(record.date),
+            record.name || "未設定",
             formatCurrency(record.amount),
             people,
             formatCurrency(Number(record.amount) * people)

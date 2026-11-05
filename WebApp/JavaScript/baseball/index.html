@@ -46,6 +46,11 @@
                     <div class="invalid-feedback">日付を入力してください。</div>
                 </div>
                 <div class="col-md-4">
+                    <label for="income-name" class="form-label">名目</label>
+                    <input type="text" id="income-name" name="name" class="form-control" placeholder="例：部費" required>
+                    <div class="invalid-feedback">名目を入力してください。</div>
+                </div>
+                <div class="col-md-4">
                     <label for="income-amount" class="form-label">収入額（円）</label>
                     <input type="number" id="income-amount" name="amount" class="form-control" min="1" step="1" placeholder="1人あたりの金額" required>
                     <div class="invalid-feedback">1以上の整数を入力してください。</div>
@@ -65,6 +70,7 @@
                     <thead class="table-light">
                         <tr>
                             <th scope="col">日付</th>
+                            <th scope="col">名目</th>
                             <th scope="col">1人あたり</th>
                             <th scope="col">人数</th>
                             <th scope="col">収入合計</th>

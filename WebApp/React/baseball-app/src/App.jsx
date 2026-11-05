@@ -54,6 +54,7 @@ function App() {
   const [inventory, setInventory] = useState([])
 
   const [incomeDate, setIncomeDate] = useState(getToday())
+  const [incomeName, setIncomeName] = useState('')
   const [incomeAmount, setIncomeAmount] = useState('')
   const [people, setPeople] = useState('1')
 
@@ -134,6 +135,7 @@ function App() {
 
     const data = {
       date: incomeDate,
+      name: incomeName.trim(),
       amount: Number(incomeAmount),
       people: Number(people),
     }
@@ -153,6 +155,7 @@ function App() {
       setIncomeRecords((current) => [...current, savedRecord])
 
       setIncomeAmount('')
+      setIncomeName('')
       setPeople('1')
       setIncomeDate(getToday())
     } catch (err) {
@@ -214,6 +217,7 @@ function App() {
       type === 'income'
         ? {
             date: formatDate(item.date),
+            name: item.name ?? '',
             amount: String(item.amount),
             people: String(item.people),
           }
@@ -238,6 +242,7 @@ function App() {
       type === 'income'
         ? {
             date: editForm.date,
+            name: editForm.name.trim(),
             amount: Number(editForm.amount),
             people: Number(editForm.people),
           }
@@ -413,6 +418,17 @@ function App() {
             </label>
 
             <label>
+              名目
+              <input
+                type="text"
+                value={incomeName}
+                onChange={(event) => setIncomeName(event.target.value)}
+                placeholder="例：部費"
+                required
+              />
+            </label>
+
+            <label>
               1人あたりの金額（円）
               <input
                 type="number"
@@ -460,6 +476,7 @@ function App() {
                 <thead>
                   <tr>
                     <th>日付</th>
+                    <th>名目</th>
                     <th>1人あたり</th>
                     <th>人数</th>
                     <th>合計金額</th>
@@ -470,6 +487,7 @@ function App() {
                   {incomeRecords.map((record) => (
                     <tr key={record.id}>
                       <td>{formatDate(record.date)}</td>
+                      <td>{record.name || '未設定'}</td>
                       <td>¥{Number(record.amount).toLocaleString()}</td>
                       <td>{record.people}人</td>
                       <td>
@@ -729,6 +747,20 @@ function App() {
 
                 {editTarget.type === 'income' ? (
                   <>
+                    <label>
+                      名目
+                      <input
+                        type="text"
+                        value={editForm.name}
+                        onChange={(event) =>
+                          setEditForm((current) => ({
+                            ...current,
+                            name: event.target.value,
+                          }))
+                        }
+                        required
+                      />
+                    </label>
                     <label>
                       1人あたりの金額（円）
                       <input

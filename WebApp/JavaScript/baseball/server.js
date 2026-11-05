@@ -46,13 +46,14 @@ app.get("/api/inventory", async (req, res) => {
     }
 });
 
-// 変更箇所: incomeテーブルのdate・amount・peopleを収入一覧として返します。
+// incomeテーブルの名目・日付・金額・人数を収入一覧として返します。
 app.get("/api/income", async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT
                 id,
                 TO_CHAR(date, 'YYYY-MM-DD') AS date,
+                name,
                 amount,
                 people
             FROM income
@@ -121,17 +122,19 @@ app.post("/api/inventory", async (req, res) => {
     }
 });
 
-// 変更箇所: 収入フォームの人数・金額の必須条件とDB登録を一致させます。
+// 収入フォームの名目・人数・金額を検証してDBに登録します。
 app.post("/api/income", async (req, res) => {
     try {
         const {
             date,
+            name,
             amount,
             people
         } = req.body;
 
         if (
             !date ||
+            !name?.trim() ||
             !Number.isInteger(amount) ||
             amount < 1 ||
             !Number.isInteger(people) ||
@@ -144,11 +147,12 @@ app.post("/api/income", async (req, res) => {
 
         const result = await pool.query(
             `INSERT INTO income
-            (date, amount, people)
-            VALUES ($1, $2, $3)
+            (date, name, amount, people)
+            VALUES ($1, $2, $3, $4)
             RETURNING *`,
             [
                 date,
+                name.trim(),
                 amount,
                 people
             ]
@@ -242,6 +246,7 @@ app.put("/api/income/:id", async (req, res) => {
         const id = Number(req.params.id);
         const {
             date,
+            name,
             amount,
             people
         } = req.body;
@@ -254,6 +259,7 @@ app.put("/api/income/:id", async (req, res) => {
 
         if (
             !date ||
+            !name?.trim() ||
             !Number.isInteger(amount) ||
             amount < 1 ||
             !Number.isInteger(people) ||
@@ -267,11 +273,12 @@ app.put("/api/income/:id", async (req, res) => {
         const result = await pool.query(
             `UPDATE income
             SET date = $1,
-                amount = $2,
-                people = $3
-            WHERE id = $4
-            RETURNING id, TO_CHAR(date, 'YYYY-MM-DD') AS date, amount, people`,
-            [date, amount, people, id]
+                name = $2,
+                amount = $3,
+                people = $4
+            WHERE id = $5
+            RETURNING id, TO_CHAR(date, 'YYYY-MM-DD') AS date, name, amount, people`,
+            [date, name.trim(), amount, people, id]
         );
 
         if (result.rowCount === 0) {

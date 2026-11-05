@@ -16,6 +16,7 @@ const categories = [
   { value: '防具', label: '防具' },
   { value: 'ヘルメット', label: 'ヘルメット' },
   { value: 'グローブ', label: 'グローブ' },
+  { value: 'グラウンド', label: 'グラウンド' },
 ]
 
 function getToday() {

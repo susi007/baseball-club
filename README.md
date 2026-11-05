@@ -18,6 +18,14 @@ bootstrapはcssのデザインテンプレート
 webアプリ自体の操作は同じなので割愛  
 
 ## Reactフォルダについて  
+Reactフォルダの中にAIが書いたREADME.mdがあります。  
+vercelを用いてアプリを稼働させています。動きだけ見たいという方は、  　　
+https://baseball-club-9jmxxqp18-susi007.vercel.app  
+を踏んでください。ただ基本的に閲覧権限しかないので面白くないと思う。  
+adminが欲しい方はsusiに頼むか、後述するやり方で自分の環境でアプリを立ち上げて
+admin権限をつけてみてください。（AI使えばたぶん誰でもできる）  
+
+　　
 Supabase Authでログインし、収入・備品データもSupabase Databaseに保存する。JavaScript版とは別のDBを使用する。
 
 ① Supabase SQL Editorで `WebApp/React/baseball-app/supabase/migrations/20261105160000_create_club_tables.sql` を実行
@@ -27,12 +35,14 @@ Supabase Authでログインし、収入・備品データもSupabase Database�
 管理者として編集を許可するメールアドレスは、`App.jsx` の `ADMIN_EMAILS` とSupabaseのRLSポリシーに同じアドレスを設定する。
 ```App.jsx
 const ADMIN_EMAILS = [
-  'susi007garu@gmail.com',
+  'xxxxx@gmail.com',
 ]
 ```
 既存のローカルPostgreSQLのデータは自動移行されない。必要な場合は別途エクスポート・インポートする。
+
+
 <操作>  
-・アカウント登録。メールが来るはず…  
+・アカウント登録。メールが来るがURLを踏んでもブラウザに飛んでエラーメッセージが出る。しかし、問題なく登録はできているはず。　　
 ・収入は人数×1人あたりの金額で計算される
 ・備品を登録すると支出として計算される  ※備品->支出に命名変更するかも
 ・項目はすべて入力しないと反映されない

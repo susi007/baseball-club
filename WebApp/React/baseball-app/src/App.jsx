@@ -6,6 +6,11 @@ import { supabase } from './lib/supabaseClient'
 
 const API_URL = 'http://localhost:3000/api'
 
+// 管理者のメールアドレス一覧
+const ADMIN_EMAILS = [
+  'susi007garu@gmail.com',
+]
+
 const categories = [
   { value: '練習玉', label: '練習球' },
   { value: '公認球', label: '公認球' },
@@ -30,6 +35,8 @@ function formatDate(date) {
 function App() {
   const [user, setUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
+
+  const isAdmin = ADMIN_EMAILS.includes(user?.email?.toLowerCase())
 
   useEffect(() => {
     // 現在のログイン状態を確認
@@ -128,6 +135,23 @@ function App() {
   // 残高
   const balance = totalIncome - totalExpense
 
+  async function getAdminAuthHeaders() {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession()
+
+    if (sessionError) throw sessionError
+    if (!session?.access_token) {
+      throw new Error('ログインし直してください')
+    }
+
+    return {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    }
+  }
+
   // 収入登録
   async function handleIncomeSubmit(event) {
     event.preventDefault()
@@ -143,15 +167,15 @@ function App() {
     try {
       const response = await fetch(`${API_URL}/income`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await getAdminAuthHeaders(),
         body: JSON.stringify(data),
       })
 
+      const savedRecord = await response.json()
       if (!response.ok) {
-        throw new Error('収入の登録に失敗しました')
+        throw new Error(savedRecord.error || '収入の登録に失敗しました')
       }
 
-      const savedRecord = await response.json()
       setIncomeRecords((current) => [...current, savedRecord])
 
       setIncomeAmount('')
@@ -180,7 +204,7 @@ function App() {
     try {
       const response = await fetch(`${API_URL}/inventory`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await getAdminAuthHeaders(),
         body: JSON.stringify(data),
       })
 
@@ -202,8 +226,8 @@ function App() {
     }
   }
 
-  
-  
+
+
   // 削除確認画面を開く
   function openDeleteDialog(type, item) {
     setDeleteTarget({ type, item })
@@ -216,19 +240,19 @@ function App() {
     setEditForm(
       type === 'income'
         ? {
-            date: formatDate(item.date),
-            name: item.name ?? '',
-            amount: String(item.amount),
-            people: String(item.people),
-          }
+          date: formatDate(item.date),
+          name: item.name ?? '',
+          amount: String(item.amount),
+          people: String(item.people),
+        }
         : {
-            date: formatDate(item.date),
-            name: item.name,
-            category: item.category,
-            amount: String(item.amount),
-            quantity: String(item.quantity),
-            owner: item.owner,
-          }
+          date: formatDate(item.date),
+          name: item.name,
+          category: item.category,
+          amount: String(item.amount),
+          quantity: String(item.quantity),
+          owner: item.owner,
+        }
     )
   }
 
@@ -241,27 +265,29 @@ function App() {
     const data =
       type === 'income'
         ? {
-            date: editForm.date,
-            name: editForm.name.trim(),
-            amount: Number(editForm.amount),
-            people: Number(editForm.people),
-          }
+          date: editForm.date,
+          name: editForm.name.trim(),
+          amount: Number(editForm.amount),
+          people: Number(editForm.people),
+        }
         : {
-            date: editForm.date,
-            name: editForm.name.trim(),
-            category: editForm.category,
-            amount: Number(editForm.amount),
-            quantity: Number(editForm.quantity),
-            owner: editForm.owner.trim(),
-          }
+          date: editForm.date,
+          name: editForm.name.trim(),
+          category: editForm.category,
+          amount: Number(editForm.amount),
+          quantity: Number(editForm.quantity),
+          owner: editForm.owner.trim(),
+        }
 
     setEditError('')
     setIsSavingEdit(true)
 
     try {
+      const headers =
+        await getAdminAuthHeaders()
       const response = await fetch(`${API_URL}/${endpoint}/${item.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(data),
       })
 
@@ -279,7 +305,7 @@ function App() {
         }
         throw new Error(
           responseData?.error ||
-            `更新に失敗しました (HTTP ${response.status})`
+          `更新に失敗しました (HTTP ${response.status})`
         )
       }
 
@@ -321,13 +347,15 @@ function App() {
     setError('')
 
     try {
+      const headers = await getAdminAuthHeaders()
       const response = await fetch(
         `${API_URL}/${endpoint}/${item.id}`,
-        { method: 'DELETE' }
+        { method: 'DELETE', headers }
       )
 
       if (!response.ok) {
-        throw new Error('削除に失敗しました')
+        const responseData = await response.json()
+        throw new Error(responseData.error || '削除に失敗しました')
       }
 
       if (type === 'income') {
@@ -404,65 +432,67 @@ function App() {
           </div>
         </section>
 
-        <section>
-          <h2>収入登録</h2>
-          <form onSubmit={handleIncomeSubmit} className="app-form">
-            <label>
-              日付
-              <input
-                type="date"
-                value={incomeDate}
-                onChange={(event) => setIncomeDate(event.target.value)}
-                required
-              />
-            </label>
+        {isAdmin && (
+          <section>
+            <h2>収入登録</h2>
+            <form onSubmit={handleIncomeSubmit} className="app-form">
+              <label>
+                日付
+                <input
+                  type="date"
+                  value={incomeDate}
+                  onChange={(event) => setIncomeDate(event.target.value)}
+                  required
+                />
+              </label>
 
-            <label>
-              名目
-              <input
-                type="text"
-                value={incomeName}
-                onChange={(event) => setIncomeName(event.target.value)}
-                placeholder="例：部費"
-                required
-              />
-            </label>
+              <label>
+                名目
+                <input
+                  type="text"
+                  value={incomeName}
+                  onChange={(event) => setIncomeName(event.target.value)}
+                  placeholder="例：部費"
+                  required
+                />
+              </label>
 
-            <label>
-              1人あたりの金額（円）
-              <input
-                type="number"
-                min="1"
-                step="1"
-                value={incomeAmount}
-                onChange={(event) => setIncomeAmount(event.target.value)}
-                placeholder="例：1000"
-                required
-              />
-            </label>
+              <label>
+                1人あたりの金額（円）
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={incomeAmount}
+                  onChange={(event) => setIncomeAmount(event.target.value)}
+                  placeholder="例：1000"
+                  required
+                />
+              </label>
 
-            <label>
-              人数
-              <input
-                type="number"
-                min="1"
-                step="1"
-                value={people}
-                onChange={(event) => setPeople(event.target.value)}
-                required
-              />
-            </label>
+              <label>
+                人数
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={people}
+                  onChange={(event) => setPeople(event.target.value)}
+                  required
+                />
+              </label>
 
-            <p className="calculated-total">
-              登録予定金額：
-              ¥{(
-                (Number(incomeAmount) || 0) * (Number(people) || 0)
-              ).toLocaleString()}
-            </p>
+              <p className="calculated-total">
+                登録予定金額：
+                ¥{(
+                  (Number(incomeAmount) || 0) * (Number(people) || 0)
+                ).toLocaleString()}
+              </p>
 
-            <button type="submit">収入を登録</button>
-          </form>
-        </section>
+              <button type="submit">収入を登録</button>
+            </form>
+          </section>
+        )}
 
         <section>
           <h2>収入一覧</h2>
@@ -496,22 +526,24 @@ function App() {
                         ).toLocaleString()}
                       </td>
                       <td>
-                        <div className="row-actions">
-                          <button
-                            type="button"
-                            className="edit-button"
-                            onClick={() => openEditDialog('income', record)}
-                          >
-                            編集
-                          </button>
-                          <button
-                            type="button"
-                            className="delete-button"
-                            onClick={() => openDeleteDialog('income', record)}
-                          >
-                            削除
-                          </button>
-                        </div>
+                        {isAdmin && (
+                          <div className="row-actions">
+                            <button
+                              type="button"
+                              className="edit-button"
+                              onClick={() => openEditDialog('income', record)}
+                            >
+                              編集
+                            </button>
+                            <button
+                              type="button"
+                              className="delete-button"
+                              onClick={() => openDeleteDialog('income', record)}
+                            >
+                              削除
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -522,93 +554,95 @@ function App() {
           )}
         </section>
 
-        <section>
-          <h2>備品登録</h2>
+        {isAdmin && (
+          <section>
+            <h2>備品登録</h2>
 
-          <form onSubmit={handleInventorySubmit} className="app-form">
-            <label>
-              日付
-              <input
-                type="date"
-                value={itemDate}
-                onChange={(event) => setItemDate(event.target.value)}
-                required
-              />
-            </label>
+            <form onSubmit={handleInventorySubmit} className="app-form">
+              <label>
+                日付
+                <input
+                  type="date"
+                  value={itemDate}
+                  onChange={(event) => setItemDate(event.target.value)}
+                  required
+                />
+              </label>
 
-            <label>
-              名前
-              <input
-                type="text"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="備品の名前"
-                required
-              />
-            </label>
+              <label>
+                名前
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="備品の名前"
+                  required
+                />
+              </label>
 
-            <label>
-              カテゴリー
-              <select
-                value={category}
-                onChange={(event) => setCategory(event.target.value)}
-                required
-              >
-                <option value="">カテゴリーを選択</option>
-                {categories.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <label>
+                カテゴリー
+                <select
+                  value={category}
+                  onChange={(event) => setCategory(event.target.value)}
+                  required
+                >
+                  <option value="">カテゴリーを選択</option>
+                  {categories.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <label>
-              購入額（円）
-              <input
-                type="number"
-                min="0"
-                step="1"
-                value={itemAmount}
-                onChange={(event) => setItemAmount(event.target.value)}
-                placeholder="例：1500"
-                required
-              />
-            </label>
+              <label>
+                購入額（円）
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={itemAmount}
+                  onChange={(event) => setItemAmount(event.target.value)}
+                  placeholder="例：1500"
+                  required
+                />
+              </label>
 
-            <label>
-              個数
-              <input
-                type="number"
-                min="1"
-                step="1"
-                value={quantity}
-                onChange={(event) => setQuantity(event.target.value)}
-                required
-              />
-            </label>
+              <label>
+                個数
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={quantity}
+                  onChange={(event) => setQuantity(event.target.value)}
+                  required
+                />
+              </label>
 
-            <label>
-              所持者
-              <input
-                type="text"
-                value={owner}
-                onChange={(event) => setOwner(event.target.value)}
-                placeholder="所持者の名前"
-                required
-              />
-            </label>
+              <label>
+                所持者
+                <input
+                  type="text"
+                  value={owner}
+                  onChange={(event) => setOwner(event.target.value)}
+                  placeholder="所持者の名前"
+                  required
+                />
+              </label>
 
-            <p className="calculated-total">
-              購入合計：
-              ¥{(
-                (Number(itemAmount) || 0) * (Number(quantity) || 0)
-              ).toLocaleString()}
-            </p>
+              <p className="calculated-total">
+                購入合計：
+                ¥{(
+                  (Number(itemAmount) || 0) * (Number(quantity) || 0)
+                ).toLocaleString()}
+              </p>
 
-            <button type="submit">備品を登録</button>
-          </form>
-        </section>
+              <button type="submit">備品を登録</button>
+            </form>
+          </section>
+        )}
 
         <section>
           <h2>備品一覧</h2>
@@ -664,7 +698,7 @@ function App() {
                     <th>操作</th>
                   </tr>
                 </thead>
-                
+
                 <tbody>
                   {filteredInventory.map((item) => (
                     <tr key={item.id}>
@@ -684,22 +718,24 @@ function App() {
                       </td>
                       <td>{item.owner}</td>
                       <td>
-                        <div className="row-actions">
-                          <button
-                            type="button"
-                            className="edit-button"
-                            onClick={() => openEditDialog('inventory', item)}
-                          >
-                            編集
-                          </button>
-                          <button
-                            type="button"
-                            className="delete-button"
-                            onClick={() => openDeleteDialog('inventory', item)}
-                          >
-                            削除
-                          </button>
-                        </div>
+                        {isAdmin && (
+                          <div className="row-actions">
+                            <button
+                              type="button"
+                              className="edit-button"
+                              onClick={() => openEditDialog('inventory', item)}
+                            >
+                              編集
+                            </button>
+                            <button
+                              type="button"
+                              className="delete-button"
+                              onClick={() => openDeleteDialog('inventory', item)}
+                            >
+                              削除
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -709,7 +745,7 @@ function App() {
             </div>
           )}
         </section>
-        
+
         {editTarget && (
           <div className="modal-overlay">
             <form

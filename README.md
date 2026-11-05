@@ -19,6 +19,17 @@ webアプリ自体の操作は同じなので割愛
 
 ## Reactフォルダについて  
 本番環境に向け開発中  
+
+管理者として編集を許可するメールアドレスは、画面側とAPI側の両方に設定する。
+`App.jsx` の `ADMIN_EMAILS` と `JavaScript/baseball/server.js` の `adminEmails` に同じアドレスを追加する。
+API側でもSupabaseのログインセッションを検証するため、画面側だけに追加しても編集権限は付与されない。
+```App.jsx
+const ADMIN_EMAILS = [
+  'susi007garu@gmail.com',
+]
+```
+APIサーバーの `JavaScript/baseball/.env` には、DBパスワードに加えてSupabaseのURLとPublishable Keyを設定する。
+`JavaScript/baseball/.env.example` を参照する。
 <準備>
 ①supabaseに登録　※そのうちDBもクラウドにする予定。今はログイン機能用  
 ②サイトから.env.local用のURLとKEYを取得し、ファイルを作成  

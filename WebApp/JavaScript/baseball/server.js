@@ -11,6 +11,68 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabasePublishableKey =
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const adminEmails = new Set(["susi007garu@gmail.com"]);
+
+async function requireAdmin(req, res, next) {
+    if (!supabaseUrl || !supabasePublishableKey) {
+        return res.status(503).json({
+            error: "認証設定がありません"
+        });
+    }
+
+    const authorization = req.get("authorization");
+    const accessToken = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
+    if (!accessToken) {
+        return res.status(401).json({
+            error: "ログインしてください"
+        });
+    }
+
+    try {
+        const response = await fetch(
+            `${supabaseUrl.replace(/\/$/, "")}/auth/v1/user`,
+            {
+                headers: {
+                    apikey: supabasePublishableKey,
+                    Authorization: `Bearer ${accessToken}`
+                },
+                signal: AbortSignal.timeout(10000)
+            }
+        );
+
+        if (response.status === 401 || response.status === 403) {
+            return res.status(401).json({
+                error: "ログインし直してください"
+            });
+        }
+
+        if (!response.ok) {
+            console.error(`Supabase token verification failed: ${response.status}`);
+            return res.status(503).json({
+                error: "認証サービスを利用できません"
+            });
+        }
+
+        const user = await response.json();
+        if (!adminEmails.has(user.email?.toLowerCase())) {
+            return res.status(403).json({
+                error: "変更する権限がありません"
+            });
+        }
+
+        next();
+    } catch (error) {
+        console.error("Supabase token verification failed", error);
+        res.status(503).json({
+            error: "認証サービスを利用できません"
+        });
+    }
+}
+
 // PostgreSQLへの接続設定
 const pool = new Pool({
     user: "postgres",
@@ -71,7 +133,7 @@ app.get("/api/income", async (req, res) => {
 });
 
 // ② 備品を登録
-app.post("/api/inventory", async (req, res) => {
+app.post("/api/inventory", requireAdmin, async (req, res) => {
     try {
         const {
             date,
@@ -101,7 +163,8 @@ app.post("/api/inventory", async (req, res) => {
             `INSERT INTO inventory
             (date, name, category, amount, quantity, owner)
             VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING *`,
+            RETURNING id, TO_CHAR(date, 'YYYY-MM-DD') AS date,
+                name, category, amount, quantity, owner`,
             [
                 date,
                 name.trim(),
@@ -123,7 +186,7 @@ app.post("/api/inventory", async (req, res) => {
 });
 
 // 収入フォームの名目・人数・金額を検証してDBに登録します。
-app.post("/api/income", async (req, res) => {
+app.post("/api/income", requireAdmin, async (req, res) => {
     try {
         const {
             date,
@@ -149,7 +212,8 @@ app.post("/api/income", async (req, res) => {
             `INSERT INTO income
             (date, name, amount, people)
             VALUES ($1, $2, $3, $4)
-            RETURNING *`,
+            RETURNING id, TO_CHAR(date, 'YYYY-MM-DD') AS date,
+                name, amount, people`,
             [
                 date,
                 name.trim(),
@@ -169,7 +233,7 @@ app.post("/api/income", async (req, res) => {
 });
 
 // ③ 備品を更新
-app.put("/api/inventory/:id", async (req, res) => {
+app.put("/api/inventory/:id", requireAdmin, async (req, res) => {
     try {
         const id = Number(req.params.id);
         const {
@@ -241,7 +305,7 @@ app.put("/api/inventory/:id", async (req, res) => {
 });
 
 // ③ 収入を更新
-app.put("/api/income/:id", async (req, res) => {
+app.put("/api/income/:id", requireAdmin, async (req, res) => {
     try {
         const id = Number(req.params.id);
         const {
@@ -298,7 +362,7 @@ app.put("/api/income/:id", async (req, res) => {
 });
 
 // ④ 備品を削除
-app.delete("/api/inventory/:id", async (req, res) => {
+app.delete("/api/inventory/:id", requireAdmin, async (req, res) => {
     try {
         const id = Number(req.params.id);
 
@@ -330,7 +394,7 @@ app.delete("/api/inventory/:id", async (req, res) => {
 });
 
 // ④ 収入を削除
-app.delete("/api/income/:id", async (req, res) => {
+app.delete("/api/income/:id", requireAdmin, async (req, res) => {
     try {
         const id = Number(req.params.id);
 
@@ -362,7 +426,8 @@ app.delete("/api/income/:id", async (req, res) => {
 });
 
 // サーバー起動
-app.listen(3000, () => {
+const port = Number(process.env.PORT) || 3000;
+app.listen(port, () => {
     console.log("サーバーを起動しました");
-    console.log("http://localhost:3000");
+    console.log(`http://localhost:${port}`);
 });

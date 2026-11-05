@@ -4,8 +4,6 @@ import './App.css'
 import Auth from './Auth'
 import { supabase } from './lib/supabaseClient'
 
-const API_URL = 'http://localhost:3000/api'
-
 // 管理者のメールアドレス一覧
 const ADMIN_EMAILS = [
   'susi007garu@gmail.com',
@@ -84,37 +82,37 @@ function App() {
   const [editError, setEditError] = useState('')
   const [isSavingEdit, setIsSavingEdit] = useState(false)
 
-  // PostgreSQLから収入と備品を取得
+  // Supabaseから収入と備品を取得
   useEffect(() => {
-    async function loadData() {
-      setLoading(false)
-      return
-    }
+    if (!user) return
+
+    let cancelled = false
 
     async function loadData() {
       try {
-        const [incomeResponse, inventoryResponse] = await Promise.all([
-          fetch(`${API_URL}/income`),
-          fetch(`${API_URL}/inventory`),
+        const [incomeResult, inventoryResult] = await Promise.all([
+          supabase.from('income').select('*').order('id'),
+          supabase.from('inventory').select('*').order('id'),
         ])
 
-        if (!incomeResponse.ok || !inventoryResponse.ok) {
-          throw new Error('データを取得できませんでした')
+        if (incomeResult.error) throw incomeResult.error
+        if (inventoryResult.error) throw inventoryResult.error
+
+        if (!cancelled) {
+          setIncomeRecords(incomeResult.data)
+          setInventory(inventoryResult.data)
         }
-
-        const incomeData = await incomeResponse.json()
-        const inventoryData = await inventoryResponse.json()
-
-        setIncomeRecords(incomeData)
-        setInventory(inventoryData)
       } catch (err) {
-        setError(err.message)
+        if (!cancelled) setError(err.message)
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
 
     loadData()
+    return () => {
+      cancelled = true
+    }
   }, [user])
 
 
@@ -135,23 +133,6 @@ function App() {
   // 残高
   const balance = totalIncome - totalExpense
 
-  async function getAdminAuthHeaders() {
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession()
-
-    if (sessionError) throw sessionError
-    if (!session?.access_token) {
-      throw new Error('ログインし直してください')
-    }
-
-    return {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${session.access_token}`,
-    }
-  }
-
   // 収入登録
   async function handleIncomeSubmit(event) {
     event.preventDefault()
@@ -165,16 +146,13 @@ function App() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/income`, {
-        method: 'POST',
-        headers: await getAdminAuthHeaders(),
-        body: JSON.stringify(data),
-      })
+      const { data: savedRecord, error: insertError } = await supabase
+        .from('income')
+        .insert(data)
+        .select()
+        .single()
 
-      const savedRecord = await response.json()
-      if (!response.ok) {
-        throw new Error(savedRecord.error || '収入の登録に失敗しました')
-      }
+      if (insertError) throw insertError
 
       setIncomeRecords((current) => [...current, savedRecord])
 
@@ -202,17 +180,13 @@ function App() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/inventory`, {
-        method: 'POST',
-        headers: await getAdminAuthHeaders(),
-        body: JSON.stringify(data),
-      })
+      const { data: savedItem, error: insertError } = await supabase
+        .from('inventory')
+        .insert(data)
+        .select()
+        .single()
 
-      if (!response.ok) {
-        throw new Error('備品の登録に失敗しました')
-      }
-
-      const savedItem = await response.json()
+      if (insertError) throw insertError
       setInventory((current) => [...current, savedItem])
 
       setItemDate(getToday())
@@ -261,7 +235,7 @@ function App() {
     if (!editTarget) return
 
     const { type, item } = editTarget
-    const endpoint = type === 'income' ? 'income' : 'inventory'
+    const table = type === 'income' ? 'income' : 'inventory'
     const data =
       type === 'income'
         ? {
@@ -283,36 +257,14 @@ function App() {
     setIsSavingEdit(true)
 
     try {
-      const headers =
-        await getAdminAuthHeaders()
-      const response = await fetch(`${API_URL}/${endpoint}/${item.id}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(data),
-      })
+      const { data: updatedItem, error: updateError } = await supabase
+        .from(table)
+        .update(data)
+        .eq('id', item.id)
+        .select()
+        .single()
 
-      const responseData = response.headers
-        .get('content-type')
-        ?.includes('application/json')
-        ? await response.json()
-        : null
-
-      if (!response.ok) {
-        if (response.status === 404 && !responseData?.error) {
-          throw new Error(
-            `更新APIが見つかりません。APIサーバーに PUT /api/${endpoint}/:id の実装が必要です。`
-          )
-        }
-        throw new Error(
-          responseData?.error ||
-          `更新に失敗しました (HTTP ${response.status})`
-        )
-      }
-
-      let updatedItem = { ...item, ...data }
-      if (responseData) {
-        updatedItem = { ...updatedItem, ...responseData }
-      }
+      if (updateError) throw updateError
 
       if (type === 'income') {
         setIncomeRecords((current) =>
@@ -341,22 +293,20 @@ function App() {
     if (!deleteTarget) return
 
     const { type, item } = deleteTarget
-    const endpoint =
+    const table =
       type === 'income' ? 'income' : 'inventory'
 
     setError('')
 
     try {
-      const headers = await getAdminAuthHeaders()
-      const response = await fetch(
-        `${API_URL}/${endpoint}/${item.id}`,
-        { method: 'DELETE', headers }
-      )
+      const { error: deleteError } = await supabase
+        .from(table)
+        .delete()
+        .eq('id', item.id)
+        .select('id')
+        .single()
 
-      if (!response.ok) {
-        const responseData = await response.json()
-        throw new Error(responseData.error || '削除に失敗しました')
-      }
+      if (deleteError) throw deleteError
 
       if (type === 'income') {
         setIncomeRecords((current) =>

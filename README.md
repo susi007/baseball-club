@@ -1,10 +1,10 @@
 # baseball-club  
 開発環境としてHTML,CSS,javasprict, Node.js,React,supabaseなどが必要  
-アプリを立ち上げるには現状二つのサーバーを起動する必要が有る 
+React版はSupabaseに直接接続する。JavaScript版デモはローカルAPIサーバーを使用する。
 
 ```
-Javasprict\baseball > node server.js  
-React\baseball-app > npm run dev  
+React版: WebApp\React\baseball-app > npm run dev
+JavaScript版: WebApp\JavaScript\baseball > node server.js
 ```
 
 ## javasprict/baseballについて  
@@ -18,28 +18,22 @@ bootstrapはcssのデザインテンプレート
 webアプリ自体の操作は同じなので割愛  
 
 ## Reactフォルダについて  
-本番環境に向け開発中  
+Supabase Authでログインし、収入・備品データもSupabase Databaseに保存する。JavaScript版とは別のDBを使用する。
 
-管理者として編集を許可するメールアドレスは、画面側とAPI側の両方に設定する。
-`App.jsx` の `ADMIN_EMAILS` と `JavaScript/baseball/server.js` の `adminEmails` に同じアドレスを追加する。
-API側でもSupabaseのログインセッションを検証するため、画面側だけに追加しても編集権限は付与されない。
+① Supabase SQL Editorで `WebApp/React/baseball-app/supabase/migrations/20261105160000_create_club_tables.sql` を実行
+② `WebApp/React/baseball-app/.env.local` を作成し、SupabaseのURLとPublishable Keyを設定
+③ `WebApp/React/baseball-app` で `npm install`、`npm run dev` を実行
+
+管理者として編集を許可するメールアドレスは、`App.jsx` の `ADMIN_EMAILS` とSupabaseのRLSポリシーに同じアドレスを設定する。
 ```App.jsx
 const ADMIN_EMAILS = [
   'susi007garu@gmail.com',
 ]
 ```
-APIサーバーの `JavaScript/baseball/.env` には、DBパスワードに加えてSupabaseのURLとPublishable Keyを設定する。
-`JavaScript/baseball/.env.example` を参照する。
-<準備>
-①supabaseに登録　※そのうちDBもクラウドにする予定。今はログイン機能用  
-②サイトから.env.local用のURLとKEYを取得し、ファイルを作成  
-```
-VITE_SUPABASE_URL=  
-VITE_SUPABASE_PUBLISHABLE_KEY=  
-```
+既存のローカルPostgreSQLのデータは自動移行されない。必要な場合は別途エクスポート・インポートする。
 <操作>  
 ・アカウント登録。メールが来るはず…  
-・収入は人数×金額となっている※収入名目を増やす予定  
+・収入は人数×1人あたりの金額で計算される
 ・備品を登録すると支出として計算される  ※備品->支出に命名変更するかも
 ・項目はすべて入力しないと反映されない
 

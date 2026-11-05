@@ -1,16 +1,27 @@
-# React + Vite
+# Baseball Club React App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Setup
 
-Currently, two official plugins are available:
+1. In the Supabase project SQL Editor, run the migration in
+   `supabase/migrations/20261105160000_create_club_tables.sql`.
+2. Copy `.env.example` to `.env.local` in this directory and fill in the
+   Supabase project URL and publishable key:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+   ```dotenv
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
+   ```
 
-## React Compiler
+3. Install dependencies and start the app:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+   ```sh
+   npm install
+   npm run dev
+   ```
 
-## Expanding the ESLint configuration
+Authenticated users can view the records. The migration grants data changes
+only to `susi007garu@gmail.com`, enforced by Supabase row-level security.
+Update the policies in the migration if the administrator changes.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+The migration creates the schema only. Existing records in the local
+PostgreSQL database must be exported and imported separately.

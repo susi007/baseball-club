@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="bootstrap.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+    <title>備品管理リスト</title>
+</head>
+<body class="bg-light">
+    <main class="container py-4">
+        <h1 class="text-center text-info my-4">備品管理リスト</h1>
+        <section class="row g-3 mb-4" aria-label="収支状況">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h2 class="h6 card-title">収入合計</h2>
+                        <p id="total-income" class="h4 mb-0">0円</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h2 class="h6 card-title">支出合計</h2>
+                        <p id="total-expense" class="h4 mb-0">0円</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h2 class="h6 card-title">残金</h2>
+                        <p id="balance" class="h4 mb-0">0円</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-5" aria-labelledby="income-heading">
+            <h2 id="income-heading" class="h4 mb-3">収入を登録</h2>
+            <form id="income-form" class="row g-3" novalidate>
+                <div class="col-md-4">
+                    <label for="income-date" class="form-label">日付</label>
+                    <input type="date" id="income-date" name="date" class="form-control" required>
+                    <div class="invalid-feedback">日付を入力してください。</div>
+                </div>
+                <div class="col-md-4">
+                    <label for="income-amount" class="form-label">収入額（円）</label>
+                    <input type="number" id="income-amount" name="amount" class="form-control" min="1" step="1" placeholder="1人あたりの金額" required>
+                    <div class="invalid-feedback">1以上の整数を入力してください。</div>
+                </div>
+                <div class="col-md-4">
+                    <label for="income-people" class="form-label">人数</label>
+                    <input type="number" id="income-people" name="people" class="form-control" min="1" step="1" placeholder="例：10" required>
+                    <div class="invalid-feedback">1以上の整数を入力してください。</div>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-success">収入を登録</button>
+                </div>
+            </form>
+
+            <div class="table-responsive mt-3">
+                <table class="table table-striped table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">日付</th>
+                            <th scope="col">1人あたり</th>
+                            <th scope="col">人数</th>
+                            <th scope="col">収入合計</th>
+                            <th scope="col"><span class="visually-hidden">操作</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="income-list"></tbody>
+                </table>
+            </div>
+            <p id="empty-income-message" class="text-secondary">収入の記録はありません。</p>
+        </section>
+
+        <h2 class="h4 mb-3">備品を登録</h2>
+        <form id="form" class="row g-3 mb-4" novalidate>
+            <div class="col-md-4">
+                <label for="date" class="form-label">日付</label>
+                <input type="date" id="date" name="date" class="form-control" required>
+                <div class="invalid-feedback">日付を入力してください。</div>
+            </div>
+            <div class="col-md-4">
+                <label for="name" class="form-label">名前</label>
+                <input type="text" id="name" name="name" class="form-control" placeholder="備品の名前" required>
+                <div class="invalid-feedback">名前を入力してください。</div>
+            </div>
+            <div class="col-md-4">
+                <label for="category" class="form-label">カテゴリ</label>
+                <select id="category" name="category" class="form-select" required>
+                    <option value="" selected disabled>カテゴリを選択</option>
+                    <option value="練習玉">練習球</option>
+                    <option value="公認球">公認球</option>
+                    <option value="バット">バット</option>
+                    <option value="防具">防具</option>
+                    <option value="ヘルメット">ヘルメット</option>
+                    <option value="グローブ">グローブ</option>
+                </select>
+                <div class="invalid-feedback">カテゴリを選択してください。</div>
+            </div>
+            <div class="col-md-4">
+                <label for="amount" class="form-label">購入額（円）</label>
+                <input type="number" id="amount" name="amount" class="form-control" min="0" step="1" placeholder="例：1500" required>
+                <div class="invalid-feedback">0以上の整数を入力してください。</div>
+            </div>
+            <div class="col-md-4">
+                <label for="quantity" class="form-label">個数</label>
+                <input type="number" id="quantity" name="quantity" class="form-control" min="1" step="1" placeholder="例：2" required>
+                <div class="invalid-feedback">1以上の整数を入力してください。</div>
+            </div>
+            <div class="col-md-4">
+                <label for="owner" class="form-label">所持者</label>
+                <input type="text" id="owner" name="owner" class="form-control" placeholder="所持者の名前" required>
+                <div class="invalid-feedback">所持者の名前を入力してください。</div>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">備品を登録</button>
+            </div>
+        </form>
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label for="inventory-owner-filter" class="form-label">所持者で絞り込み</label>
+                <select id="inventory-owner-filter" class="form-select">
+                    <option value="">すべて</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="inventory-category-filter" class="form-label">カテゴリで絞り込み</label>
+                <select id="inventory-category-filter" class="form-select">
+                    <option value="">すべて</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">日付</th>
+                        <th scope="col">名前</th>
+                        <th scope="col">カテゴリ</th>
+                        <th scope="col">購入額</th>
+                        <th scope="col">個数</th>
+                        <th scope="col">支出</th>
+                        <th scope="col">所持者</th>
+                        <th scope="col"><span class="visually-hidden">操作</span></th>
+                    </tr>
+                </thead>
+                <tbody id="inventory-list"></tbody>
+            </table>
+        </div>
+        <p id="empty-message" class="text-center text-secondary">登録された備品はありません。</p>
+    </main>
+    <dialog id="delete-confirmation" class="delete-modal" aria-labelledby="delete-confirmation-title">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="delete-confirmation-title" class="modal-title fs-5">削除の確認</h2>
+            </div>
+            <div class="modal-body">
+                <p id="delete-confirmation-message" class="mb-0"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-delete-cancel>キャンセル</button>
+                <button type="button" id="confirm-delete-button" class="btn btn-danger">削除する</button>
+            </div>
+        </div>
+    </dialog>
+    <script src="index.js"></script>
+</body>
+</html>

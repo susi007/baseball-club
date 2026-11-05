@@ -1,0 +1,38 @@
+main.container {
+    max-width: 960px;
+}
+
+.table {
+    min-width: 640px;
+}
+
+.delete-modal {
+    --bs-modal-padding: 1.5rem;
+    --bs-modal-header-padding: 1.25rem 1.5rem;
+    --bs-modal-footer-gap: 0.75rem;
+    position: fixed;
+    inset: 0;
+    width: min(500px, calc(100% - 1rem));
+    max-width: none;
+    max-height: calc(100% - 1rem);
+    margin: auto;
+    padding: 0;
+    overflow: visible;
+    color: var(--bs-body-color);
+    background-color: var(--bs-body-bg);
+    border: var(--bs-modal-border-width) solid var(--bs-modal-border-color);
+    border-radius: var(--bs-modal-border-radius);
+    box-shadow: var(--bs-modal-box-shadow);
+}
+
+.delete-modal .modal-content {
+    background-color: var(--bs-body-bg);
+}
+
+.delete-modal .modal-footer {
+    padding: 1rem 1.5rem;
+}
+
+.delete-modal::backdrop {
+    background-color: rgb(0 0 0 / 50%);
+}

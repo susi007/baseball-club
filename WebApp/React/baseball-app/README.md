@@ -21,7 +21,15 @@
    ```
 
 3. Supabase Authenticationで、アプリの公開URLをSite URLおよびRedirect URLsに設定します。
-4. 管理者アカウントをSupabase Authenticationに登録します。アプリとRLSポリシーでは`src/App.jsx`およびmigrationに記載されたメールアドレスを管理者として扱います。管理者を変更する場合は、両方の設定を一致させてください。
+4. Supabase Dashboardの **Authentication > Email Templates** で、**Magic Link** テンプレートの本文を確認コードを含む内容に変更します。既定のリンク用 `{{ .ConfirmationURL }}` は使わず、`{{ .Token }}` を表示してください。たとえば本文を次のようにします。
+
+   ```html
+   <h2>ログイン確認コード</h2>
+   <p>確認コード: {{ .Token }}</p>
+   ```
+
+   メールプロバイダーの **Confirm email** が有効な場合は、**Confirm signup** テンプレートも同様に `{{ .Token }}` を表示する内容に変更してください。これらのテンプレートがリンク形式のままだと、メールには確認コードではなくログイン用URLが届きます。設定後、ログイン画面でメールに届いた6桁のコードを入力します。
+5. 管理者アカウントをSupabase Authenticationに登録します。アプリとRLSポリシーでは`src/App.jsx`およびmigrationに記載されたメールアドレスを管理者として扱います。管理者を変更する場合は、両方の設定を一致させてください。
 
 ## ローカルでの起動
 

@@ -28,11 +28,11 @@ admin権限をつけてみてください。（AI使えばたぶん誰でもで�
 　　
 Supabase Authでログインし、収入・備品データもSupabase Databaseに保存する。JavaScript版とは別のDBを使用する。
 
-① Supabase SQL Editorで `WebApp/React/baseball-app/supabase/migrations/20261105160000_create_club_tables.sql` を実行
-② `WebApp/React/baseball-app/.env.local` を作成し、SupabaseのURLとPublishable Keyを設定
-③ `WebApp/React/baseball-app` で `npm install`、`npm run dev` を実行
+① Supabase SQL Editorで `WebApp/React/baseball-app/supabase/migrations/20261105160000_create_club_tables.sql` を実行  
+② `WebApp/React/baseball-app/.env.local` を作成し、SupabaseのURLとPublishable Keyを設定  
+③ `WebApp/React/baseball-app` で `npm install`、`npm run dev` を実行  
 
-管理者として編集を許可するメールアドレスは、`App.jsx` の `ADMIN_EMAILS` とSupabaseのRLSポリシーに同じアドレスを設定する。
+管理者として編集を許可するメールアドレスは、`App.jsx` の `ADMIN_EMAILS` とSupabaseのRLSポリシーに同じアドレスを設定する。  
 ```App.jsx
 const ADMIN_EMAILS = [
   'xxxxx@gmail.com',

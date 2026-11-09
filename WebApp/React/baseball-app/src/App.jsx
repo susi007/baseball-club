@@ -7,6 +7,8 @@ import { supabase } from './lib/supabaseClient'
 // 管理者のメールアドレス一覧
 const ADMIN_EMAILS = [
   'susi007garu@gmail.com',
+  'komesouta@gmail.com',
+  'tigertora7571@gmail.com'
 ]
 
 const categories = [

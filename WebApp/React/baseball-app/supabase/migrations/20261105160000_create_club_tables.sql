@@ -24,6 +24,24 @@ GRANT USAGE ON SCHEMA public TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.income, public.inventory
     TO authenticated;
 
+CREATE OR REPLACE FUNCTION public.is_club_admin()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SET search_path = ''
+AS $$
+    SELECT lower((select auth.jwt() ->> 'email')) = ANY (
+        ARRAY[
+            'susi007garu@gmail.com',
+            'komesouta@gmail.com',
+            'tigertora7571@gmail.com'
+        ]::text[]
+    );
+$$;
+
+REVOKE ALL ON FUNCTION public.is_club_admin() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.is_club_admin() TO authenticated;
+
 DROP POLICY IF EXISTS income_select_authenticated ON public.income;
 CREATE POLICY income_select_authenticated
     ON public.income
@@ -36,24 +54,22 @@ CREATE POLICY income_insert_admin
     ON public.income
     FOR INSERT
     TO authenticated
-    WITH CHECK (
-        lower((select auth.jwt() ->> 'email')) = 'susi007garu@gmail.com'
-    );
+    WITH CHECK (public.is_club_admin());
 
 DROP POLICY IF EXISTS income_update_admin ON public.income;
 CREATE POLICY income_update_admin
     ON public.income
     FOR UPDATE
     TO authenticated
-    USING (lower((select auth.jwt() ->> 'email')) = 'susi007garu@gmail.com')
-    WITH CHECK (lower((select auth.jwt() ->> 'email')) = 'susi007garu@gmail.com');
+    USING (public.is_club_admin())
+    WITH CHECK (public.is_club_admin());
 
 DROP POLICY IF EXISTS income_delete_admin ON public.income;
 CREATE POLICY income_delete_admin
     ON public.income
     FOR DELETE
     TO authenticated
-    USING (lower((select auth.jwt() ->> 'email')) = 'susi007garu@gmail.com');
+    USING (public.is_club_admin());
 
 DROP POLICY IF EXISTS inventory_select_authenticated ON public.inventory;
 CREATE POLICY inventory_select_authenticated
@@ -67,21 +83,19 @@ CREATE POLICY inventory_insert_admin
     ON public.inventory
     FOR INSERT
     TO authenticated
-    WITH CHECK (
-        lower((select auth.jwt() ->> 'email')) = 'susi007garu@gmail.com'
-    );
+    WITH CHECK (public.is_club_admin());
 
 DROP POLICY IF EXISTS inventory_update_admin ON public.inventory;
 CREATE POLICY inventory_update_admin
     ON public.inventory
     FOR UPDATE
     TO authenticated
-    USING (lower((select auth.jwt() ->> 'email')) = 'susi007garu@gmail.com')
-    WITH CHECK (lower((select auth.jwt() ->> 'email')) = 'susi007garu@gmail.com');
+    USING (public.is_club_admin())
+    WITH CHECK (public.is_club_admin());
 
 DROP POLICY IF EXISTS inventory_delete_admin ON public.inventory;
 CREATE POLICY inventory_delete_admin
     ON public.inventory
     FOR DELETE
     TO authenticated
-    USING (lower((select auth.jwt() ->> 'email')) = 'susi007garu@gmail.com');
+    USING (public.is_club_admin());

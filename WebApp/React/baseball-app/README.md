@@ -29,7 +29,7 @@
    ```
 
    メールプロバイダーの **Confirm email** が有効な場合は、**Confirm signup** テンプレートも同様に `{{ .Token }}` を表示する内容に変更してください。これらのテンプレートがリンク形式のままだと、メールには確認コードではなくログイン用URLが届きます。設定後、ログイン画面でメールに届いた6桁のコードを入力します。
-5. 管理者アカウントをSupabase Authenticationに登録します。アプリとRLSポリシーでは`src/App.jsx`およびmigrationに記載されたメールアドレスを管理者として扱います。管理者を変更する場合は、両方の設定を一致させてください。
+5. 管理者アカウントをSupabase Authenticationに登録します。画面上の管理機能は`src/App.jsx`の`ADMIN_EMAILS`、データベースの権限はmigration内の`public.is_club_admin()`関数にあるメールアドレス配列で判定します。管理者を追加・削除するときは両方を一致させ、SQL Editorでmigrationを再実行してください。
 
 ## ローカルでの起動
 

@@ -38,6 +38,9 @@ const ADMIN_EMAILS = [
   'xxxxx@gmail.com',
 ]
 ```
+
+supabaseの管理者追加のSQL等については、WebApp\React\baseball-app\supabase\migrations\20261105160000_create_club_tables.sqlをかくにんされたし。  
+
 既存のローカルPostgreSQLのデータは自動移行されない。必要な場合は別途エクスポート・インポートする。
 
 

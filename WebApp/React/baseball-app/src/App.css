@@ -78,6 +78,77 @@ section h2 {
   margin: 0;
 }
 
+/* 収入・備品エリア */
+.management-area {
+  margin-bottom: 2rem;
+  padding: 1.25rem;
+  border: 1px solid;
+  border-left-width: 5px;
+  border-radius: 0.75rem;
+}
+
+.income-area {
+  background: #f0f9f4;
+  border-color: #b7dfc7;
+  border-left-color: #198754;
+}
+
+.inventory-area {
+  background: #f0f6ff;
+  border-color: #bfd5f5;
+  border-left-color: #0d6efd;
+}
+
+.management-area-heading {
+  margin-bottom: 1rem;
+}
+
+.management-area-kicker {
+  margin: 0 0 0.25rem;
+  color: #52606d;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.management-area-heading h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 650;
+}
+
+.income-area .management-area-heading h2 {
+  color: #146c43;
+}
+
+.inventory-area .management-area-heading h2 {
+  color: #0a58ca;
+}
+
+.management-area-description {
+  margin: 0.25rem 0 0;
+  color: #52606d;
+  font-size: 0.9rem;
+}
+
+.management-panel {
+  margin: 0 0 1rem;
+  padding: 1.25rem;
+  background: #fff;
+  border: 1px solid rgba(33, 37, 41, 0.1);
+  border-radius: 0.5rem;
+}
+
+.management-panel:last-child {
+  margin-bottom: 0;
+}
+
+.management-panel h3 {
+  margin: 0 0 1rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
 /* 入力フォーム */
 .app-form {
   display: grid;
@@ -116,9 +187,39 @@ section h2 {
 }
 
 .calculated-total {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.15rem;
   grid-column: 1 / -1;
   margin: 0;
-  font-weight: 500;
+  padding: 0.6rem 1rem;
+  color: #146c43;
+  background: #d1efdc;
+  border: 1px solid #91c9a7;
+  border-radius: 0.75rem;
+  text-align: center;
+}
+
+.inventory-area .calculated-total {
+  color: #084298;
+  background: #d6e6ff;
+  border-color: #9dbcf0;
+}
+
+.calculated-total span {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.calculated-total strong {
+  color: inherit;
+  font-size: clamp(1.65rem, 4vw, 1.9rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  line-height: 1.15;
+  white-space: nowrap;
 }
 
 .app-form button {
@@ -329,6 +430,11 @@ tbody tr:hover {
 @media (max-width: 767px) {
   .summary-cards {
     grid-template-columns: 1fr;
+  }
+
+  .management-area,
+  .management-panel {
+    padding: 1rem;
   }
 
   .app-form {

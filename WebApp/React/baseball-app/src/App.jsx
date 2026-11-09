@@ -391,9 +391,18 @@ function App() {
           </div>
         </section>
 
-        {isAdmin && (
-          <section>
-            <h2>収入登録</h2>
+        <div className="management-area income-area">
+          <div className="management-area-heading">
+            <p className="management-area-kicker">INCOME</p>
+            <h2>収入管理</h2>
+            <p className="management-area-description">
+              チームの収入を登録し、これまでの記録を確認できます。
+            </p>
+          </div>
+
+          {isAdmin && (
+          <section className="management-panel">
+            <h3>収入登録</h3>
             <form onSubmit={handleIncomeSubmit} className="app-form">
               <label>
                 日付
@@ -441,20 +450,22 @@ function App() {
                 />
               </label>
 
-              <p className="calculated-total">
-                登録予定金額：
-                ¥{(
-                  (Number(incomeAmount) || 0) * (Number(people) || 0)
-                ).toLocaleString()}
-              </p>
+              <output className="calculated-total">
+                <span>登録予定金額</span>
+                <strong>
+                  ¥{(
+                    (Number(incomeAmount) || 0) * (Number(people) || 0)
+                  ).toLocaleString()}
+                </strong>
+              </output>
 
               <button type="submit">収入を登録</button>
             </form>
           </section>
-        )}
+          )}
 
-        <section>
-          <h2>収入一覧</h2>
+        <section className="management-panel">
+          <h3>収入一覧</h3>
           {loading ? (
             <p>読み込み中...</p>
           ) : incomeRecords.length === 0 ? (
@@ -512,10 +523,20 @@ function App() {
             </div>
           )}
         </section>
+        </div>
 
-        {isAdmin && (
-          <section>
-            <h2>備品登録</h2>
+        <div className="management-area inventory-area">
+          <div className="management-area-heading">
+            <p className="management-area-kicker">INVENTORY</p>
+            <h2>備品管理</h2>
+            <p className="management-area-description">
+              備品やグラウンド利用を登録し、所持者・カテゴリー別に確認できます。
+            </p>
+          </div>
+
+          {isAdmin && (
+          <section className="management-panel">
+            <h3>備品登録</h3>
 
             <form onSubmit={handleInventorySubmit} className="app-form">
               <label>
@@ -591,20 +612,22 @@ function App() {
                 />
               </label>
 
-              <p className="calculated-total">
-                購入合計：
-                ¥{(
-                  (Number(itemAmount) || 0) * (Number(quantity) || 0)
-                ).toLocaleString()}
-              </p>
+              <output className="calculated-total">
+                <span>購入合計金額</span>
+                <strong>
+                  ¥{(
+                    (Number(itemAmount) || 0) * (Number(quantity) || 0)
+                  ).toLocaleString()}
+                </strong>
+              </output>
 
               <button type="submit">備品を登録</button>
             </form>
           </section>
-        )}
+          )}
 
-        <section>
-          <h2>備品一覧</h2>
+        <section className="management-panel">
+          <h3>備品一覧</h3>
 
           <div className="filter-area">
             <label>
@@ -704,6 +727,7 @@ function App() {
             </div>
           )}
         </section>
+        </div>
 
         {editTarget && (
           <div className="modal-overlay">

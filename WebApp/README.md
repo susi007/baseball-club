@@ -19,8 +19,8 @@ webアプリ自体の操作は同じなので割愛
 
 ## Reactフォルダについて  
 Reactフォルダの中にAIが書いたREADME.mdがあります。  
-vercelを用いてアプリを稼働させています。動きだけ見たいという方は、  　　
-https://baseball-club-9jmxxqp18-susi007.vercel.app  
+vercelを用いてアプリを稼働させています。動きだけ見たいという方は  　
+https://baseball-club.vercel.app/    
 を踏んでください。ただ基本的に閲覧権限しかないので面白くないと思う。  
 adminが欲しい方はsusiに頼むか、後述するやり方で自分の環境でアプリを立ち上げて
 admin権限をつけてみてください。（AI使えばたぶん誰でもできる）  

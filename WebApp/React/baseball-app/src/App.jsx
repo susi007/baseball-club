@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import Auth from './Auth'
 import { supabase } from './lib/supabaseClient'
@@ -36,8 +36,28 @@ function formatDate(date) {
 function App() {
   const [user, setUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
+  const [isSummaryCompact, setIsSummaryCompact] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+  const successMessageTimer = useRef(null)
 
   const isAdmin = ADMIN_EMAILS.includes(user?.email?.toLowerCase())
+
+  useEffect(() => {
+    function updateSummarySize() {
+      setIsSummaryCompact(window.scrollY > 80)
+    }
+
+    updateSummarySize()
+    window.addEventListener('scroll', updateSummarySize, { passive: true })
+    return () => window.removeEventListener('scroll', updateSummarySize)
+  }, [])
+
+  useEffect(
+    () => () => {
+      window.clearTimeout(successMessageTimer.current)
+    },
+    []
+  )
 
   useEffect(() => {
     // 現在のログイン状態を確認
@@ -136,6 +156,15 @@ function App() {
   // 残高
   const balance = totalIncome - totalExpense
 
+  function showSuccessMessage(message) {
+    window.clearTimeout(successMessageTimer.current)
+    setSuccessMessage(message)
+    successMessageTimer.current = window.setTimeout(() => {
+      setSuccessMessage('')
+      successMessageTimer.current = null
+    }, 3000)
+  }
+
   // 収入登録
   async function handleIncomeSubmit(event) {
     event.preventDefault()
@@ -163,6 +192,7 @@ function App() {
       setIncomeName('')
       setPeople('1')
       setIncomeDate(getToday())
+      showSuccessMessage('収入を登録しました。')
     } catch (err) {
       setError(err.message)
     }
@@ -198,6 +228,7 @@ function App() {
       setItemAmount('')
       setQuantity('1')
       setOwner('')
+      showSuccessMessage('備品を登録しました。')
     } catch (err) {
       setError(err.message)
     }
@@ -373,7 +404,9 @@ function App() {
       <main className="main">
         {error && <p className="error">{error}</p>}
 
-        <section>
+        <section
+          className={`summary-section${isSummaryCompact ? ' is-compact' : ''}`}
+        >
           <h2>収支状況</h2>
           <div className="summary-cards">
             <div className="card">
@@ -959,6 +992,11 @@ function App() {
         )}
 
       </main>
+      {successMessage && (
+        <div className="success-toast" role="status" aria-live="polite">
+          {successMessage}
+        </div>
+      )}
     </div>
   )
 }

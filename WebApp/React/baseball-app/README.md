@@ -7,7 +7,7 @@
 - 収入に名目を登録・表示できるようにしました。
 - 収入と備品の登録・編集・削除は管理者のみ可能です。権限は画面表示だけでなくSupabaseのRow Level Securityでも制限しています。
 - 収入・備品データはSupabase Databaseに保存します。
-- 公開URL: https://baseball-club-15wsg3uq7-susi007.vercel.app
+- 公開URL:  https://baseball-club.vercel.app/
 - GitHubの`main`ブランチへの変更はVercelからデプロイされます。
 
 ## 初回設定

@@ -12,7 +12,7 @@
 
 ## 初回設定
 
-1. SupabaseプロジェクトのSQL Editorで、`supabase/migrations/20261105160000_create_club_tables.sql`を実行します。まだテーブルやRLSポリシーを作成していない場合に必要です。
+1. SupabaseプロジェクトのSQL Editorで、`supabase/migrations/20261105160000_create_club_tables.sql`を実行し、続けて`supabase/migrations/20261110000000_create_user_profiles.sql`を実行します。既にクラブテーブルを作成済みの場合は、プロフィールのmigrationのみ実行してください。
 2. このフォルダで`.env.example`を`.env.local`にコピーし、SupabaseプロジェクトのURLとPublishable Keyを設定します。
 
    ```dotenv

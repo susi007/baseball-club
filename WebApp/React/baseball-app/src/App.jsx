@@ -36,6 +36,15 @@ function formatDate(date) {
 function App() {
   const [user, setUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
+  const [profile, setProfile] = useState(null)
+  const [profiles, setProfiles] = useState([])
+  const [profileUserId, setProfileUserId] = useState(null)
+  const [profileLoading, setProfileLoading] = useState(true)
+  const [profileLoadError, setProfileLoadError] = useState('')
+  const [profileError, setProfileError] = useState('')
+  const [profileLoadAttempt, setProfileLoadAttempt] = useState(0)
+  const [nickname, setNickname] = useState('')
+  const [isSavingNickname, setIsSavingNickname] = useState(false)
   const [isSummaryCompact, setIsSummaryCompact] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
   const successMessageTimer = useRef(null)
@@ -58,6 +67,48 @@ function App() {
     },
     []
   )
+
+  useEffect(() => {
+    if (!user) return
+
+    let cancelled = false
+
+    async function loadProfiles() {
+      setProfileLoading(true)
+      setProfileLoadError('')
+
+      try {
+        const [profileResult, profilesResult] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('id, nickname')
+            .eq('id', user.id)
+            .maybeSingle(),
+          supabase.from('profiles').select('id, nickname').order('nickname'),
+        ])
+
+        if (profileResult.error) throw profileResult.error
+        if (profilesResult.error) throw profilesResult.error
+
+        if (!cancelled) {
+          setProfile(profileResult.data)
+          setProfiles(profilesResult.data)
+        }
+      } catch (err) {
+        if (!cancelled) setProfileLoadError(err.message)
+      } finally {
+        if (!cancelled) {
+          setProfileUserId(user.id)
+          setProfileLoading(false)
+        }
+      }
+    }
+
+    loadProfiles()
+    return () => {
+      cancelled = true
+    }
+  }, [user, profileLoadAttempt])
 
   useEffect(() => {
     // 現在のログイン状態を確認
@@ -361,6 +412,7 @@ function App() {
 
   // 絞り込みに使う所持者一覧
   const owners = [...new Set(inventory.map((item) => item.owner))]
+  const ownerOptions = [...new Set(profiles.map((item) => item.nickname))]
 
   // 絞り込み後の備品一覧
   const filteredInventory = inventory.filter((item) => {
@@ -385,13 +437,124 @@ function App() {
     return <Auth />
   }
 
+  async function handleNicknameSubmit(event) {
+    event.preventDefault()
+    setProfileError('')
+
+    const trimmedNickname = nickname.trim()
+    if (!trimmedNickname) {
+      setProfileError('ニックネームを入力してください。')
+      return
+    }
+
+    setIsSavingNickname(true)
+
+    try {
+      const { data: savedProfile, error: saveError } = await supabase
+        .from('profiles')
+        .upsert(
+          { id: user.id, nickname: trimmedNickname },
+          { onConflict: 'id' }
+        )
+        .select('id, nickname')
+        .single()
+
+      if (saveError) throw saveError
+
+      setProfile(savedProfile)
+      setProfiles((current) =>
+        [...current.filter((item) => item.id !== savedProfile.id), savedProfile]
+          .sort((left, right) => left.nickname.localeCompare(right.nickname))
+      )
+    } catch (err) {
+      setProfileError(err.message)
+    } finally {
+      setIsSavingNickname(false)
+    }
+  }
+
+  if (profileLoading || profileUserId !== user.id) {
+    return (
+      <main className="auth-page">
+        <p className="auth-loading" role="status">
+          プロフィールを確認しています...
+        </p>
+      </main>
+    )
+  }
+
+  if (profileLoadError) {
+    return (
+      <main className="auth-page">
+        <section className="auth-card" aria-labelledby="profile-error-title">
+          <h1 className="auth-title" id="profile-error-title">
+            プロフィールを読み込めません
+          </h1>
+          <p className="auth-message" role="alert">{profileLoadError}</p>
+          <button
+            type="button"
+            className="auth-submit"
+            onClick={() => setProfileLoadAttempt((attempt) => attempt + 1)}
+          >
+            再読み込み
+          </button>
+        </section>
+      </main>
+    )
+  }
+
+  if (!profile) {
+    return (
+      <main className="auth-page">
+        <section className="auth-card" aria-labelledby="nickname-title">
+          <p className="auth-brand">BASEBALL CLUB</p>
+          <h1 className="auth-title" id="nickname-title">
+            ニックネーム登録
+          </h1>
+          <p className="auth-description">
+            備品の所有者として表示するニックネームを設定してください。
+          </p>
+          <form className="auth-form" onSubmit={handleNicknameSubmit}>
+            <label htmlFor="profile-nickname">ニックネーム</label>
+            <input
+              id="profile-nickname"
+              type="text"
+              autoComplete="nickname"
+              maxLength={30}
+              value={nickname}
+              onChange={(event) => setNickname(event.target.value)}
+              required
+            />
+            <button
+              type="submit"
+              className="auth-submit"
+              disabled={isSavingNickname}
+            >
+              {isSavingNickname ? '登録中...' : 'ニックネームを登録'}
+            </button>
+          </form>
+          {profileError && (
+            <p className="auth-message" role="alert">{profileError}</p>
+          )}
+          <button
+            type="button"
+            className="auth-toggle"
+            onClick={() => supabase.auth.signOut()}
+          >
+            ログアウト
+          </button>
+        </section>
+      </main>
+    )
+  }
+
   return (
     <div className="app">
       <header className="header">
         <h1>備品管理リスト</h1>
 
         <div>
-          <span>{user.email}</span>
+          <span>{profile.nickname}（{user.email}）</span>
           <button
             type="button"
             onClick={() => supabase.auth.signOut()}
@@ -636,13 +799,18 @@ function App() {
 
               <label>
                 所持者
-                <input
-                  type="text"
+                <select
                   value={owner}
                   onChange={(event) => setOwner(event.target.value)}
-                  placeholder="所持者の名前"
                   required
-                />
+                >
+                  <option value="">ニックネームを選択</option>
+                  {ownerOptions.map((person) => (
+                    <option key={person} value={person}>
+                      {person}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <output className="calculated-total">
@@ -916,8 +1084,7 @@ function App() {
                     </label>
                     <label>
                       所持者
-                      <input
-                        type="text"
+                      <select
                         value={editForm.owner}
                         onChange={(event) =>
                           setEditForm((current) => ({
@@ -926,7 +1093,18 @@ function App() {
                           }))
                         }
                         required
-                      />
+                      >
+                        {!ownerOptions.includes(editForm.owner) && (
+                          <option value={editForm.owner}>
+                            {editForm.owner}
+                          </option>
+                        )}
+                        {ownerOptions.map((person) => (
+                          <option key={person} value={person}>
+                            {person}
+                          </option>
+                        ))}
+                      </select>
                     </label>
                   </>
                 )}

@@ -774,56 +774,54 @@ function App() {
           ) : incomeRecords.length === 0 ? (
             <p>登録された収入はありません。</p>
           ) : (
-            <div className="table-wrapper">
-              <table aria-labelledby="income-list-heading">
-                <thead>
-                  <tr>
-                    <th scope="col">日付</th>
-                    <th scope="col">名目</th>
-                    <th scope="col">1人あたり</th>
-                    <th scope="col">人数</th>
-                    <th scope="col">合計金額</th>
-                    <th scope="col">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {incomeRecords.map((record) => (
-                    <tr key={record.id}>
-                      <td>{formatDate(record.date)}</td>
-                      <td>{record.name || '未設定'}</td>
-                      <td>¥{Number(record.amount).toLocaleString()}</td>
-                      <td>{record.people}人</td>
-                      <td>
+            <ul className="record-list" aria-labelledby="income-list-heading">
+              {incomeRecords.map((record) => (
+                <li className="record-card" key={record.id}>
+                  <div className="record-card-heading">
+                    <h4>{record.name || '未設定'}</h4>
+                    <time dateTime={formatDate(record.date)}>
+                      {formatDate(record.date)}
+                    </time>
+                  </div>
+                  <dl className="record-details">
+                    <div>
+                      <dt>1人あたり</dt>
+                      <dd>¥{Number(record.amount).toLocaleString()}</dd>
+                    </div>
+                    <div>
+                      <dt>人数</dt>
+                      <dd>{record.people}人</dd>
+                    </div>
+                    <div className="record-total">
+                      <dt>合計金額</dt>
+                      <dd>
                         ¥{(
                           Number(record.amount) * Number(record.people)
                         ).toLocaleString()}
-                      </td>
-                      <td>
-                        {isAdmin && (
-                          <div className="row-actions">
-                            <button
-                              type="button"
-                              className="edit-button"
-                              onClick={() => openEditDialog('income', record)}
-                            >
-                              編集
-                            </button>
-                            <button
-                              type="button"
-                              className="delete-button"
-                              onClick={() => openDeleteDialog('income', record)}
-                            >
-                              削除
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-
-              </table>
-            </div>
+                      </dd>
+                    </div>
+                  </dl>
+                  {isAdmin && (
+                    <div className="row-actions">
+                      <button
+                        type="button"
+                        className="edit-button"
+                        onClick={() => openEditDialog('income', record)}
+                      >
+                        編集
+                      </button>
+                      <button
+                        type="button"
+                        className="delete-button"
+                        onClick={() => openDeleteDialog('income', record)}
+                      >
+                        削除
+                      </button>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
           )}
         </section>
         </div>
@@ -973,65 +971,66 @@ function App() {
           ) : filteredInventory.length === 0 ? (
             <p>該当する備品はありません。</p>
           ) : (
-            <div className="table-wrapper">
-              <table aria-labelledby="expense-list-heading">
-                <thead>
-                  <tr>
-                    <th scope="col">日付</th>
-                    <th scope="col">名前</th>
-                    <th scope="col">カテゴリー</th>
-                    <th scope="col">購入額</th>
-                    <th scope="col">個数</th>
-                    <th scope="col">支出</th>
-                    <th scope="col">所持者</th>
-                    <th scope="col">操作</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {filteredInventory.map((item) => (
-                    <tr key={item.id}>
-                      <td>{formatDate(item.date)}</td>
-                      <td>{item.name}</td>
-                      <td>
+            <ul className="record-list" aria-labelledby="expense-list-heading">
+              {filteredInventory.map((item) => (
+                <li className="record-card" key={item.id}>
+                  <div className="record-card-heading">
+                    <h4>{item.name}</h4>
+                    <time dateTime={formatDate(item.date)}>
+                      {formatDate(item.date)}
+                    </time>
+                  </div>
+                  <dl className="record-details">
+                    <div>
+                      <dt>カテゴリー</dt>
+                      <dd>
                         {categories.find(
                           (option) => option.value === item.category
                         )?.label || item.category}
-                      </td>
-                      <td>¥{Number(item.amount).toLocaleString()}</td>
-                      <td>{item.quantity}</td>
-                      <td>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>購入額</dt>
+                      <dd>¥{Number(item.amount).toLocaleString()}</dd>
+                    </div>
+                    <div>
+                      <dt>個数</dt>
+                      <dd>{item.quantity}</dd>
+                    </div>
+                    <div>
+                      <dt>所持者</dt>
+                      <dd>{item.owner}</dd>
+                    </div>
+                    <div className="record-total">
+                      <dt>支出</dt>
+                      <dd>
                         ¥{(
                           Number(item.amount) * Number(item.quantity)
                         ).toLocaleString()}
-                      </td>
-                      <td>{item.owner}</td>
-                      <td>
-                        {isAdmin && (
-                          <div className="row-actions">
-                            <button
-                              type="button"
-                              className="edit-button"
-                              onClick={() => openEditDialog('inventory', item)}
-                            >
-                              編集
-                            </button>
-                            <button
-                              type="button"
-                              className="delete-button"
-                              onClick={() => openDeleteDialog('inventory', item)}
-                            >
-                              削除
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-
-              </table>
-            </div>
+                      </dd>
+                    </div>
+                  </dl>
+                  {isAdmin && (
+                    <div className="row-actions">
+                      <button
+                        type="button"
+                        className="edit-button"
+                        onClick={() => openEditDialog('inventory', item)}
+                      >
+                        編集
+                      </button>
+                      <button
+                        type="button"
+                        className="delete-button"
+                        onClick={() => openDeleteDialog('inventory', item)}
+                      >
+                        削除
+                      </button>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
           )}
         </section>
         </div>

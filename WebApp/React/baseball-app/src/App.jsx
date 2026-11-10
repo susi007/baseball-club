@@ -659,11 +659,7 @@ function App() {
           hidden={activeManagementTab !== 'income'}
         >
           <div className="management-area-heading">
-            <p className="management-area-kicker">INCOME</p>
             <h2>収入管理</h2>
-            <p className="management-area-description">
-              チームの収入を登録し、これまでの記録を確認できます。
-            </p>
           </div>
 
           {isAdmin && (
@@ -800,11 +796,7 @@ function App() {
           hidden={activeManagementTab !== 'expense'}
         >
           <div className="management-area-heading">
-            <p className="management-area-kicker">EXPENSES</p>
             <h2>支出管理</h2>
-            <p className="management-area-description">
-              購入内容やグラウンド利用を登録し、所持者・カテゴリー別に確認できます。
-            </p>
           </div>
 
           {isAdmin && (

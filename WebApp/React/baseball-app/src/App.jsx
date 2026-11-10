@@ -768,22 +768,22 @@ function App() {
           )}
 
         <section className="management-panel">
-          <h3>収入一覧</h3>
+          <h3 id="income-list-heading">収入一覧</h3>
           {loading ? (
             <p>読み込み中...</p>
           ) : incomeRecords.length === 0 ? (
             <p>登録された収入はありません。</p>
           ) : (
             <div className="table-wrapper">
-              <table>
+              <table aria-labelledby="income-list-heading">
                 <thead>
                   <tr>
-                    <th>日付</th>
-                    <th>名目</th>
-                    <th>1人あたり</th>
-                    <th>人数</th>
-                    <th>合計金額</th>
-                    <th>操作</th>
+                    <th scope="col">日付</th>
+                    <th scope="col">名目</th>
+                    <th scope="col">1人あたり</th>
+                    <th scope="col">人数</th>
+                    <th scope="col">合計金額</th>
+                    <th scope="col">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -934,7 +934,7 @@ function App() {
           )}
 
         <section className="management-panel">
-          <h3>支出一覧</h3>
+          <h3 id="expense-list-heading">支出一覧</h3>
 
           <div className="filter-area">
             <label>
@@ -974,17 +974,17 @@ function App() {
             <p>該当する備品はありません。</p>
           ) : (
             <div className="table-wrapper">
-              <table>
+              <table aria-labelledby="expense-list-heading">
                 <thead>
                   <tr>
-                    <th>日付</th>
-                    <th>名前</th>
-                    <th>カテゴリー</th>
-                    <th>購入額</th>
-                    <th>個数</th>
-                    <th>支出</th>
-                    <th>所持者</th>
-                    <th>操作</th>
+                    <th scope="col">日付</th>
+                    <th scope="col">名前</th>
+                    <th scope="col">カテゴリー</th>
+                    <th scope="col">購入額</th>
+                    <th scope="col">個数</th>
+                    <th scope="col">支出</th>
+                    <th scope="col">所持者</th>
+                    <th scope="col">操作</th>
                   </tr>
                 </thead>
 

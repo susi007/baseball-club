@@ -96,9 +96,89 @@ section h2 {
   font-size: 1rem;
 }
 
+.management-tabs {
+  display: flex;
+  align-items: flex-end;
+  width: 66.667%;
+  margin-right: auto;
+  margin-left: auto;
+  margin-bottom: 0;
+}
+
+.management-tab {
+  flex: 1;
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+  border: 0;
+  border-radius: 0.75rem 0.75rem 0 0;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.income-tab {
+  color: #9d174d;
+  background: #fce4f0;
+  border-top-right-radius: 0;
+}
+
+.expense-tab {
+  color: #155e75;
+  background: #cffafe;
+  border-top-left-radius: 0;
+}
+
+.management-tab:hover:not(.is-active) {
+  filter: brightness(0.97);
+}
+
+.income-tab.is-active {
+  color: #9d174d;
+  background: #fff1f8;
+  border-top-right-radius: 0;
+  border: 1px solid #e99abd;
+  border-bottom: 0;
+  transform: translateY(1px);
+}
+
+.expense-tab.is-active {
+  color: #155e75;
+  background: #ecfeff;
+  border-top-left-radius: 0;
+  border: 1px solid #73d9e8;
+  border-bottom: 0;
+  transform: translateY(1px);
+}
+
+.management-area {
+  margin-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.income-area {
+  border-top-color: #e99abd;
+}
+
+.inventory-area {
+  border-top-color: #73d9e8;
+}
+
+.management-tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(13, 202, 240, 0.45);
+}
+
+[role="tabpanel"]:focus-visible {
+  outline: 3px solid rgba(13, 202, 240, 0.45);
+  outline-offset: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .summary-section,
-  .summary-section h2 {
+  .summary-section h2,
+  .management-tab {
     transition: none;
   }
 }
@@ -140,13 +220,13 @@ section h2 {
 
 .income-area {
   background: #fff1f8;
-  border-color: #f3b8d5;
+  border-color: #e99abd;
   border-left-color: #b42370;
 }
 
 .inventory-area {
   background: #ecfeff;
-  border-color: #a5f3fc;
+  border-color: #73d9e8;
   border-left-color: #0e7490;
 }
 

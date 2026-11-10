@@ -72,7 +72,7 @@ export default function Auth() {
         <p className="auth-description">
           {otpSent
             ? `${email} に確認コードを送信しました。`
-            : '野球クラブの収支・備品管理'}
+            : '野球クラブの収支・支出管理'}
         </p>
 
         <form className="auth-form" onSubmit={handleSubmit}>

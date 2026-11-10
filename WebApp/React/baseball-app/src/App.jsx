@@ -46,8 +46,10 @@ function App() {
   const [nickname, setNickname] = useState('')
   const [isSavingNickname, setIsSavingNickname] = useState(false)
   const [isSummaryCompact, setIsSummaryCompact] = useState(false)
+  const [activeManagementTab, setActiveManagementTab] = useState('income')
   const [successMessage, setSuccessMessage] = useState('')
   const successMessageTimer = useRef(null)
+  const managementTabRefs = useRef([])
 
   const isAdmin = ADMIN_EMAILS.includes(user?.email?.toLowerCase())
 
@@ -279,7 +281,7 @@ function App() {
       setItemAmount('')
       setQuantity('1')
       setOwner('')
-      showSuccessMessage('備品を登録しました。')
+      showSuccessMessage('支出を登録しました。')
     } catch (err) {
       setError(err.message)
     }
@@ -473,6 +475,27 @@ function App() {
     }
   }
 
+  function handleManagementTabKeyDown(event, currentIndex) {
+    let nextIndex
+
+    if (event.key === 'ArrowRight') {
+      nextIndex = (currentIndex + 1) % 2
+    } else if (event.key === 'ArrowLeft') {
+      nextIndex = (currentIndex + 1) % 2
+    } else if (event.key === 'Home') {
+      nextIndex = 0
+    } else if (event.key === 'End') {
+      nextIndex = 1
+    } else {
+      return
+    }
+
+    event.preventDefault()
+    const nextTab = nextIndex === 0 ? 'income' : 'expense'
+    setActiveManagementTab(nextTab)
+    managementTabRefs.current[nextIndex]?.focus()
+  }
+
   if (profileLoading || profileUserId !== user.id) {
     return (
       <main className="auth-page">
@@ -551,7 +574,7 @@ function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1>備品管理リスト</h1>
+        <h1>支出管理リスト</h1>
 
         <div>
           <span>{profile.nickname}（{user.email}）</span>
@@ -587,7 +610,39 @@ function App() {
           </div>
         </section>
 
-        <div className="management-area income-area">
+        <div className="management-tabs" role="tablist" aria-label="管理項目">
+          {[
+            { id: 'income', label: '収入管理' },
+            { id: 'expense', label: '支出管理' },
+          ].map((tab, index) => (
+            <button
+              key={tab.id}
+              ref={(element) => {
+                managementTabRefs.current[index] = element
+              }}
+              type="button"
+              id={`${tab.id}-tab`}
+              className={`management-tab ${tab.id}-tab${activeManagementTab === tab.id ? ' is-active' : ''}`}
+              role="tab"
+              aria-selected={activeManagementTab === tab.id}
+              aria-controls={`${tab.id}-panel`}
+              tabIndex={activeManagementTab === tab.id ? 0 : -1}
+              onClick={() => setActiveManagementTab(tab.id)}
+              onKeyDown={(event) => handleManagementTabKeyDown(event, index)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div
+          className="management-area income-area"
+          id="income-panel"
+          role="tabpanel"
+          aria-labelledby="income-tab"
+          tabIndex={0}
+          hidden={activeManagementTab !== 'income'}
+        >
           <div className="management-area-heading">
             <p className="management-area-kicker">INCOME</p>
             <h2>収入管理</h2>
@@ -721,18 +776,25 @@ function App() {
         </section>
         </div>
 
-        <div className="management-area inventory-area">
+        <div
+          className="management-area inventory-area"
+          id="expense-panel"
+          role="tabpanel"
+          aria-labelledby="expense-tab"
+          tabIndex={0}
+          hidden={activeManagementTab !== 'expense'}
+        >
           <div className="management-area-heading">
-            <p className="management-area-kicker">INVENTORY</p>
-            <h2>備品管理</h2>
+            <p className="management-area-kicker">EXPENSES</p>
+            <h2>支出管理</h2>
             <p className="management-area-description">
-              備品やグラウンド利用を登録し、所持者・カテゴリー別に確認できます。
+              購入内容やグラウンド利用を登録し、所持者・カテゴリー別に確認できます。
             </p>
           </div>
 
           {isAdmin && (
           <section className="management-panel">
-            <h3>備品登録</h3>
+            <h3>支出登録</h3>
 
             <form onSubmit={handleInventorySubmit} className="app-form">
               <label>
@@ -822,13 +884,13 @@ function App() {
                 </strong>
               </output>
 
-              <button type="submit">備品を登録</button>
+              <button type="submit">支出を登録</button>
             </form>
           </section>
           )}
 
         <section className="management-panel">
-          <h3>備品一覧</h3>
+          <h3>支出一覧</h3>
 
           <div className="filter-area">
             <label>
@@ -940,7 +1002,7 @@ function App() {
               aria-labelledby="edit-modal-title"
             >
               <h2 id="edit-modal-title">
-                {editTarget.type === 'income' ? '収入の編集' : '備品の編集'}
+                {editTarget.type === 'income' ? '収入の編集' : '支出の編集'}
               </h2>
 
               {editError && (

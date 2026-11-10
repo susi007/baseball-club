@@ -1,5 +1,19 @@
 
 import { useEffect, useRef, useState } from 'react'
+import {
+  Alert,
+  Button,
+  Card,
+  CardContent,
+  CircularProgress,
+  IconButton,
+  Paper,
+  Tab,
+  Tabs,
+  TextField,
+  Tooltip,
+  Typography,
+} from '@mui/material'
 import './App.css'
 import Auth from './Auth'
 import { supabase } from './lib/supabaseClient'
@@ -50,7 +64,6 @@ function App() {
   const [isAccountInfoVisible, setIsAccountInfoVisible] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
   const successMessageTimer = useRef(null)
-  const managementTabRefs = useRef([])
 
   const isAdmin = ADMIN_EMAILS.includes(user?.email?.toLowerCase())
 
@@ -429,9 +442,10 @@ function App() {
   if (authLoading) {
     return (
       <main className="auth-page">
-        <p className="auth-loading" role="status">
-          ログイン状態を確認しています...
-        </p>
+        <Paper className="auth-loading" role="status">
+          <CircularProgress size={24} />
+          <Typography>ログイン状態を確認しています...</Typography>
+        </Paper>
       </main>
     )
   }
@@ -476,33 +490,13 @@ function App() {
     }
   }
 
-  function handleManagementTabKeyDown(event, currentIndex) {
-    let nextIndex
-
-    if (event.key === 'ArrowRight') {
-      nextIndex = (currentIndex + 1) % 2
-    } else if (event.key === 'ArrowLeft') {
-      nextIndex = (currentIndex + 1) % 2
-    } else if (event.key === 'Home') {
-      nextIndex = 0
-    } else if (event.key === 'End') {
-      nextIndex = 1
-    } else {
-      return
-    }
-
-    event.preventDefault()
-    const nextTab = nextIndex === 0 ? 'income' : 'expense'
-    setActiveManagementTab(nextTab)
-    managementTabRefs.current[nextIndex]?.focus()
-  }
-
   if (profileLoading || profileUserId !== user.id) {
     return (
       <main className="auth-page">
-        <p className="auth-loading" role="status">
-          プロフィールを確認しています...
-        </p>
+        <Paper className="auth-loading" role="status">
+          <CircularProgress size={24} />
+          <Typography>プロフィールを確認しています...</Typography>
+        </Paper>
       </main>
     )
   }
@@ -514,14 +508,14 @@ function App() {
           <h1 className="auth-title" id="profile-error-title">
             プロフィールを読み込めません
           </h1>
-          <p className="auth-message" role="alert">{profileLoadError}</p>
-          <button
+          <Alert severity="error" role="alert">{profileLoadError}</Alert>
+          <Button
+            variant="contained"
             type="button"
-            className="auth-submit"
             onClick={() => setProfileLoadAttempt((attempt) => attempt + 1)}
           >
             再読み込み
-          </button>
+          </Button>
         </section>
       </main>
     )
@@ -530,44 +524,48 @@ function App() {
   if (!profile) {
     return (
       <main className="auth-page">
-        <section className="auth-card" aria-labelledby="nickname-title">
-          <p className="auth-brand">BASEBALL CLUB</p>
-          <h1 className="auth-title" id="nickname-title">
+        <Card className="auth-card" aria-labelledby="nickname-title" elevation={4}>
+          <CardContent>
+          <Typography className="auth-brand" component="p" variant="overline">BASEBALL CLUB</Typography>
+          <Typography className="auth-title" component="h1" id="nickname-title" variant="h5">
             ニックネーム登録
-          </h1>
-          <p className="auth-description">
+          </Typography>
+          <Typography className="auth-description">
             備品の所有者として表示するニックネームを設定してください。
-          </p>
+          </Typography>
           <form className="auth-form" onSubmit={handleNicknameSubmit}>
-            <label htmlFor="profile-nickname">ニックネーム</label>
-            <input
+            <TextField
               id="profile-nickname"
+              label="ニックネーム"
               type="text"
               autoComplete="nickname"
-              maxLength={30}
+              fullWidth
+              variant="outlined"
+              inputProps={{ maxLength: 30 }}
               value={nickname}
               onChange={(event) => setNickname(event.target.value)}
               required
             />
-            <button
+            <Button
+              variant="contained"
               type="submit"
               className="auth-submit"
               disabled={isSavingNickname}
             >
               {isSavingNickname ? '登録中...' : 'ニックネームを登録'}
-            </button>
+            </Button>
           </form>
-          {profileError && (
-            <p className="auth-message" role="alert">{profileError}</p>
-          )}
-          <button
-            type="button"
+          {profileError && <Alert severity="error">{profileError}</Alert>}
+          <Button
+            variant="text"
             className="auth-toggle"
+            type="button"
             onClick={() => supabase.auth.signOut()}
           >
             ログアウト
-          </button>
-        </section>
+          </Button>
+          </CardContent>
+        </Card>
       </main>
     )
   }
@@ -575,12 +573,12 @@ function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1>支出管理リスト</h1>
+        <Typography component="h1" variant="h4">支出管理リスト</Typography>
 
         <div className="header-account">
-          <span className="account-nickname">
+          <Typography component="span" className="account-nickname" variant="subtitle1">
             {profile.nickname}
-          </span>
+          </Typography>
           <span
             id="account-email"
             className="account-email"
@@ -601,9 +599,10 @@ function App() {
               </span>
             )}
           </span>
-          <button
-            type="button"
+          <Tooltip title={isAccountInfoVisible ? 'メールアドレスを隠す' : 'メールアドレスを表示'}>
+          <IconButton
             className="account-visibility-button"
+            size="small"
             aria-label={
               isAccountInfoVisible ? 'メールアドレスを隠す' : 'メールアドレスを表示'
             }
@@ -636,66 +635,59 @@ function App() {
                 </>
               )}
             </svg>
-          </button>
-          <button
+          </IconButton>
+          </Tooltip>
+          <Button
+            variant="outlined"
+            size="small"
             type="button"
-            className="logout-button"
             onClick={() => supabase.auth.signOut()}
           >
             ログアウト
-          </button>
+          </Button>
         </div>
       </header>
 
       <main className="main">
-        {error && <p className="error">{error}</p>}
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
         <section
           className={`summary-section${isSummaryCompact ? ' is-compact' : ''}`}
         >
-          <h2>収支状況</h2>
+          <Typography component="h2" variant="h6">収支状況</Typography>
           <div className="summary-cards">
-            <div className="card">
-              <h3>収入</h3>
-              <p>¥{totalIncome.toLocaleString()}</p>
-            </div>
-            <div className="card">
-              <h3>支出</h3>
-              <p>¥{totalExpense.toLocaleString()}</p>
-            </div>
-            <div className="card">
-              <h3>残高</h3>
-              <p>¥{balance.toLocaleString()}</p>
-            </div>
+            {[
+              { label: '収入', value: totalIncome, color: 'primary' },
+              { label: '支出', value: totalExpense, color: 'secondary' },
+              { label: '残高', value: balance, color: 'primary' },
+            ].map((item) => (
+              <Card className={`card summary-${item.color}`} key={item.label}>
+                <CardContent>
+                  <Typography component="h3" variant="subtitle2" color="text.secondary">
+                    {item.label}
+                  </Typography>
+                  <Typography component="p" variant="h5" fontWeight={700}>
+                    ¥{item.value.toLocaleString()}
+                  </Typography>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </section>
 
-        <div className="management-tabs" role="tablist" aria-label="管理項目">
-          {[
-            { id: 'income', label: '収入管理' },
-            { id: 'expense', label: '支出管理' },
-          ].map((tab, index) => (
-            <button
-              key={tab.id}
-              ref={(element) => {
-                managementTabRefs.current[index] = element
-              }}
-              type="button"
-              id={`${tab.id}-tab`}
-              className={`management-tab ${tab.id}-tab${activeManagementTab === tab.id ? ' is-active' : ''}`}
-              role="tab"
-              aria-selected={activeManagementTab === tab.id}
-              aria-controls={`${tab.id}-panel`}
-              tabIndex={activeManagementTab === tab.id ? 0 : -1}
-              onClick={() => setActiveManagementTab(tab.id)}
-              onKeyDown={(event) => handleManagementTabKeyDown(event, index)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        <Tabs
+          className="management-tabs"
+          value={activeManagementTab}
+          onChange={(_event, value) => setActiveManagementTab(value)}
+          aria-label="管理項目"
+          variant="fullWidth"
+        >
+          <Tab id="income-tab" aria-controls="income-panel" value="income" label="収入管理" />
+          <Tab id="expense-tab" aria-controls="expense-panel" value="expense" label="支出管理" />
+        </Tabs>
 
-        <div
+        <Paper
+          elevation={0}
           className="management-area income-area"
           id="income-panel"
           role="tabpanel"
@@ -705,7 +697,7 @@ function App() {
         >
           {isAdmin && (
           <section className="management-panel">
-            <h3>収入登録</h3>
+            <Typography component="h3" variant="h6">収入登録</Typography>
             <form onSubmit={handleIncomeSubmit} className="app-form">
               <label>
                 日付
@@ -762,21 +754,22 @@ function App() {
                 </strong>
               </output>
 
-              <button type="submit">収入を登録</button>
+              <Button type="submit" variant="contained">収入を登録</Button>
             </form>
           </section>
           )}
 
         <section className="management-panel">
-          <h3 id="income-list-heading">収入一覧</h3>
+          <Typography component="h3" id="income-list-heading" variant="h6">収入一覧</Typography>
           {loading ? (
-            <p>読み込み中...</p>
+            <Typography>読み込み中...</Typography>
           ) : incomeRecords.length === 0 ? (
-            <p>登録された収入はありません。</p>
+            <Typography>登録された収入はありません。</Typography>
           ) : (
             <ul className="record-list" aria-labelledby="income-list-heading">
               {incomeRecords.map((record) => (
-                <li className="record-card" key={record.id}>
+                <Card component="li" className="record-card" key={record.id}>
+                  <CardContent>
                   <div className="record-card-heading">
                     <h4>{record.name || '未設定'}</h4>
                     <time dateTime={formatDate(record.date)}>
@@ -803,30 +796,36 @@ function App() {
                   </dl>
                   {isAdmin && (
                     <div className="row-actions">
-                      <button
+                      <Button
+                        variant="outlined"
+                        size="small"
                         type="button"
                         className="edit-button"
                         onClick={() => openEditDialog('income', record)}
                       >
                         編集
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        size="small"
                         type="button"
                         className="delete-button"
                         onClick={() => openDeleteDialog('income', record)}
                       >
                         削除
-                      </button>
+                      </Button>
                     </div>
                   )}
-                </li>
+                  </CardContent>
+                </Card>
               ))}
             </ul>
           )}
         </section>
-        </div>
+        </Paper>
 
-        <div
+        <Paper
+          elevation={0}
           className="management-area inventory-area"
           id="expense-panel"
           role="tabpanel"
@@ -836,7 +835,7 @@ function App() {
         >
           {isAdmin && (
           <section className="management-panel">
-            <h3>支出登録</h3>
+            <Typography component="h3" variant="h6">支出登録</Typography>
 
             <form onSubmit={handleInventorySubmit} className="app-form">
               <label>
@@ -926,13 +925,13 @@ function App() {
                 </strong>
               </output>
 
-              <button type="submit">支出を登録</button>
+              <Button type="submit" variant="contained">支出を登録</Button>
             </form>
           </section>
           )}
 
         <section className="management-panel">
-          <h3 id="expense-list-heading">支出一覧</h3>
+          <Typography component="h3" id="expense-list-heading" variant="h6">支出一覧</Typography>
 
           <div className="filter-area">
             <label>
@@ -967,13 +966,14 @@ function App() {
           </div>
 
           {loading ? (
-            <p>読み込み中...</p>
+            <Typography>読み込み中...</Typography>
           ) : filteredInventory.length === 0 ? (
-            <p>該当する備品はありません。</p>
+            <Typography>該当する備品はありません。</Typography>
           ) : (
             <ul className="record-list" aria-labelledby="expense-list-heading">
               {filteredInventory.map((item) => (
-                <li className="record-card" key={item.id}>
+                <Card component="li" className="record-card" key={item.id}>
+                  <CardContent>
                   <div className="record-card-heading">
                     <h4>{item.name}</h4>
                     <time dateTime={formatDate(item.date)}>
@@ -1012,28 +1012,33 @@ function App() {
                   </dl>
                   {isAdmin && (
                     <div className="row-actions">
-                      <button
+                      <Button
+                        variant="outlined"
+                        size="small"
                         type="button"
                         className="edit-button"
                         onClick={() => openEditDialog('inventory', item)}
                       >
                         編集
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        size="small"
                         type="button"
                         className="delete-button"
                         onClick={() => openDeleteDialog('inventory', item)}
                       >
                         削除
-                      </button>
+                      </Button>
                     </div>
                   )}
-                </li>
+                  </CardContent>
+                </Card>
               ))}
             </ul>
           )}
         </section>
-        </div>
+        </Paper>
 
         {editTarget && (
           <div className="modal-overlay">
@@ -1216,21 +1221,23 @@ function App() {
               </div>
 
               <div className="modal-actions">
-                <button
+                <Button
+                  variant="outlined"
                   type="button"
                   className="cancel-button"
                   onClick={() => setEditTarget(null)}
                   disabled={isSavingEdit}
                 >
                   キャンセル
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="contained"
                   type="submit"
                   className="save-button"
                   disabled={isSavingEdit}
                 >
                   {isSavingEdit ? '保存中...' : '変更を保存'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -1254,21 +1261,24 @@ function App() {
               </p>
 
               <div className="modal-actions">
-                <button
+                <Button
+                  variant="outlined"
                   type="button"
                   className="cancel-button"
                   onClick={() => setDeleteTarget(null)}
                 >
                   キャンセル
-                </button>
+                </Button>
 
-                <button
+                <Button
+                  variant="contained"
+                  color="error"
                   type="button"
                   className="confirm-delete-button"
                   onClick={confirmDelete}
                 >
                   削除
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -1276,9 +1286,9 @@ function App() {
 
       </main>
       {successMessage && (
-        <div className="success-toast" role="status" aria-live="polite">
+        <Alert className="success-toast" severity="success" variant="filled" role="status" aria-live="polite">
           {successMessage}
-        </div>
+        </Alert>
       )}
     </div>
   )

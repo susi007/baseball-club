@@ -6,7 +6,7 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #1a1a1a;
-  background: #fff;
+  background: #f5f7fb;
 }
 
 * {
@@ -22,6 +22,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  background: #f5f7fb;
 }
 
 button,

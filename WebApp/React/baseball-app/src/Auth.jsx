@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Alert, Button, Card, CardContent, TextField, Typography } from '@mui/material'
 import { supabase } from './lib/supabaseClient'
 
 export default function Auth() {
@@ -64,50 +65,52 @@ export default function Auth() {
 
   return (
     <main className="auth-page">
-      <section className="auth-card" aria-labelledby="auth-title">
-        <p className="auth-brand">BASEBALL CLUB</p>
-        <h1 className="auth-title" id="auth-title">
+      <Card className="auth-card" aria-labelledby="auth-title" elevation={4}>
+        <CardContent>
+        <Typography className="auth-brand" component="p" variant="overline">BASEBALL CLUB</Typography>
+        <Typography className="auth-title" component="h1" id="auth-title" variant="h5">
           {otpSent ? '確認コードを入力' : isSignUp ? '新規登録' : 'ログイン'}
-        </h1>
-        <p className="auth-description">
+        </Typography>
+        <Typography className="auth-description">
           {otpSent
             ? `${email} に確認コードを送信しました。`
             : '野球クラブの収支・支出管理'}
-        </p>
+        </Typography>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           {otpSent ? (
-            <>
-              <label htmlFor="auth-otp">確認コード</label>
-              <input
-                id="auth-otp"
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                pattern="[0-9]{6,12}"
-                maxLength={12}
-                value={otp}
-                onChange={(event) =>
-                  setOtp(event.target.value.replace(/\D/g, '').slice(0, 12))
-                }
-                required
-              />
-            </>
+            <TextField
+              id="auth-otp"
+              label="確認コード"
+              fullWidth
+              variant="outlined"
+              inputProps={{
+                inputMode: 'numeric',
+                autoComplete: 'one-time-code',
+                pattern: '[0-9]{6,12}',
+                maxLength: 12,
+              }}
+              value={otp}
+              onChange={(event) =>
+                setOtp(event.target.value.replace(/\D/g, '').slice(0, 12))
+              }
+              required
+            />
           ) : (
-            <>
-              <label htmlFor="auth-email">メールアドレス</label>
-              <input
-                id="auth-email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-              />
-            </>
+            <TextField
+              id="auth-email"
+              label="メールアドレス"
+              type="email"
+              autoComplete="email"
+              fullWidth
+              variant="outlined"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+            />
           )}
 
-          <button type="submit" className="auth-submit" disabled={loading}>
+          <Button type="submit" className="auth-submit" variant="contained" disabled={loading}>
             {loading
               ? '処理中...'
               : otpSent
@@ -115,47 +118,51 @@ export default function Auth() {
                 : isSignUp
                   ? '確認コードを送信して登録'
                   : '確認コードを送信'}
-          </button>
+          </Button>
         </form>
 
         {message && (
-          <p className="auth-message" role="status" aria-live="polite">
+          <Alert className="auth-message" severity="info" role="status" aria-live="polite">
             {message}
-          </p>
+          </Alert>
         )}
 
         {otpSent ? (
           <>
-            <button
-              type="button"
+            <Button
               className="auth-toggle"
+              variant="text"
+              type="button"
               onClick={sendOtp}
               disabled={loading}
             >
               確認コードを再送する
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
               className="auth-toggle"
+              variant="text"
+              type="button"
               onClick={resetOtpStep}
               disabled={loading}
             >
               メールアドレスを変更する
-            </button>
+            </Button>
           </>
         ) : (
-          <button
-            type="button"
+          <Button
             className="auth-toggle"
+            variant="text"
+            type="button"
             onClick={() => {
               setIsSignUp(!isSignUp)
               setMessage('')
             }}
           >
             {isSignUp ? 'ログイン画面に戻る' : '新規アカウントを登録する'}
-          </button>
+          </Button>
         )}
-      </section>
+        </CardContent>
+      </Card>
     </main>
   )
 }

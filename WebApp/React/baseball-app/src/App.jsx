@@ -47,6 +47,7 @@ function App() {
   const [isSavingNickname, setIsSavingNickname] = useState(false)
   const [isSummaryCompact, setIsSummaryCompact] = useState(false)
   const [activeManagementTab, setActiveManagementTab] = useState('income')
+  const [isEmailVisible, setIsEmailVisible] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
   const successMessageTimer = useRef(null)
   const managementTabRefs = useRef([])
@@ -576,10 +577,24 @@ function App() {
       <header className="header">
         <h1>支出管理リスト</h1>
 
-        <div>
-          <span>{profile.nickname}（{user.email}）</span>
+        <div className="header-account">
           <button
             type="button"
+            className="nickname-button"
+            aria-expanded={isEmailVisible}
+            aria-controls="account-email"
+            onClick={() => setIsEmailVisible((visible) => !visible)}
+          >
+            {profile.nickname}
+          </button>
+          {isEmailVisible && (
+            <span id="account-email" className="account-email">
+              {user.email}
+            </span>
+          )}
+          <button
+            type="button"
+            className="logout-button"
             onClick={() => supabase.auth.signOut()}
           >
             ログアウト

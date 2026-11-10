@@ -28,6 +28,61 @@ body {
   color: #0dcaf0;
 }
 
+.header-account {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.75rem 1rem 0;
+  text-align: right;
+}
+
+.nickname-button {
+  padding: 0.35rem 0.6rem;
+  color: #6f42c1;
+  background: #f1eafb;
+  border: 0;
+  border-radius: 0.5rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.nickname-button:hover {
+  background: #e7dcf8;
+}
+
+.nickname-button:focus-visible {
+  outline: 2px solid #6f42c1;
+  outline-offset: 2px;
+}
+
+.account-email {
+  color: #495057;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.logout-button {
+  margin-left: 0.25rem;
+  padding: 0.4rem 0.8rem;
+  color: #495057;
+  background: #fff;
+  border: 1px solid #ced4da;
+  border-radius: 0.375rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.logout-button:hover {
+  background: #e9ecef;
+}
+
+.logout-button:focus-visible {
+  outline: 2px solid #6c757d;
+  outline-offset: 2px;
+}
+
 .header p {
   display: none;
 }

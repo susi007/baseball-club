@@ -658,10 +658,6 @@ function App() {
           tabIndex={0}
           hidden={activeManagementTab !== 'income'}
         >
-          <div className="management-area-heading">
-            <h2>収入管理</h2>
-          </div>
-
           {isAdmin && (
           <section className="management-panel">
             <h3>収入登録</h3>
@@ -795,10 +791,6 @@ function App() {
           tabIndex={0}
           hidden={activeManagementTab !== 'expense'}
         >
-          <div className="management-area-heading">
-            <h2>支出管理</h2>
-          </div>
-
           {isAdmin && (
           <section className="management-panel">
             <h3>支出登録</h3>

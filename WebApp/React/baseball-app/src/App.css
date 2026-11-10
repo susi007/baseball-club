@@ -935,6 +935,22 @@ body {
   box-shadow: 0 2px 8px rgb(27 37 51 / 5%);
 }
 
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.theme-switch.MuiFormControlLabel-root {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.theme-switch .MuiFormControlLabel-label {
+  color: #5e6b7a;
+  font-size: 0.875rem;
+}
+
 .header h1 {
   color: #1976d2;
   font-size: clamp(1.25rem, 3vw, 1.75rem);
@@ -1312,6 +1328,16 @@ body {
     padding: 0.75rem 1rem;
   }
 
+  .header-brand {
+    justify-content: space-between;
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .theme-switch .MuiFormControlLabel-label {
+    font-size: 0.75rem;
+  }
+
   .header-account {
     justify-content: flex-start;
     width: 100%;
@@ -1336,4 +1362,239 @@ body {
   .summary-cards .card .MuiCardContent-root:last-child {
     padding-bottom: 0.65rem;
   }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --dads-text: #edf2f7;
+  --dads-muted: #b0becb;
+  --dads-border: #627487;
+  --dads-border-light: #354454;
+  --dads-surface: #2a3948;
+  --dads-surface-light: #1e2935;
+}
+
+:root[data-theme='dark'] body {
+  color: #edf2f7;
+  background: #101820;
+}
+
+:root[data-theme='dark'] .header,
+:root[data-theme='dark'] .summary-section,
+:root[data-theme='dark'] .management-tabs.MuiTabs-root,
+:root[data-theme='dark'] .management-area.MuiPaper-root,
+:root[data-theme='dark'] .management-panel,
+:root[data-theme='dark'] .record-card.MuiCard-root,
+:root[data-theme='dark'] .auth-card.MuiCard-root,
+:root[data-theme='dark'] .delete-modal {
+  color: #edf2f7;
+  background-color: #1e2935;
+  border-color: #354454;
+}
+
+:root[data-theme='dark'] .header {
+  border-bottom-color: #354454;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 18%);
+}
+
+:root[data-theme='dark'] .header h1,
+:root[data-theme='dark'] .record-card-heading h4,
+:root[data-theme='dark'] .summary-cards .card p,
+:root[data-theme='dark'] .delete-modal h2 {
+  color: #edf2f7;
+}
+
+:root[data-theme='dark'] .theme-switch .MuiFormControlLabel-label,
+:root[data-theme='dark'] .account-nickname,
+:root[data-theme='dark'] .account-visibility-button,
+:root[data-theme='dark'] .account-email,
+:root[data-theme='dark'] .record-card-heading time,
+:root[data-theme='dark'] .record-details dt {
+  color: #b0becb;
+}
+
+:root[data-theme='dark'] .account-visibility-button:hover,
+:root[data-theme='dark'] .logout-button:hover {
+  background-color: #2a3948;
+}
+
+:root[data-theme='dark'] .logout-button {
+  color: #90caf9;
+  background-color: transparent;
+  border-color: #90caf9;
+}
+
+:root[data-theme='dark'] .summary-section {
+  border-bottom-color: #354454;
+}
+
+:root[data-theme='dark'] .summary-cards .card.MuiCard-root {
+  background-color: #1e2935;
+  border-color: #354454;
+}
+
+:root[data-theme='dark'] .summary-cards .card.summary-primary,
+:root[data-theme='dark'] .summary-cards .card.summary-secondary {
+  border-top-color: #1976d2;
+}
+
+:root[data-theme='dark'] .management-tabs .MuiTab-root {
+  color: #b0becb;
+}
+
+:root[data-theme='dark'] .management-tabs .MuiTab-root.Mui-selected {
+  color: #90caf9;
+}
+
+:root[data-theme='dark'] .management-area.MuiPaper-root,
+:root[data-theme='dark'] .record-card.MuiCard-root,
+:root[data-theme='dark'] .auth-card.MuiCard-root,
+:root[data-theme='dark'] .delete-modal {
+  box-shadow: 0 4px 14px rgb(0 0 0 / 18%);
+}
+
+:root[data-theme='dark'] .management-panel,
+:root[data-theme='dark'] .management-panel h3,
+:root[data-theme='dark'] .record-card-heading {
+  border-bottom-color: #354454;
+}
+
+:root[data-theme='dark'] .app-form input,
+:root[data-theme='dark'] .app-form select,
+:root[data-theme='dark'] .filter-area select,
+:root[data-theme='dark'] .edit-form-fields input,
+:root[data-theme='dark'] .edit-form-fields select {
+  color: #edf2f7;
+  background-color: #15202b;
+  border-color: #627487;
+}
+
+:root[data-theme='dark'] .app-form input:focus,
+:root[data-theme='dark'] .app-form select:focus,
+:root[data-theme='dark'] .filter-area select:focus,
+:root[data-theme='dark'] .edit-form-fields input:focus,
+:root[data-theme='dark'] .edit-form-fields select:focus {
+  border-color: #90caf9;
+  box-shadow: 0 0 0 3px rgb(144 202 249 / 22%);
+}
+
+:root[data-theme='dark'] .calculated-total {
+  color: #edf2f7;
+  background: #152638;
+  border-color: #354e67;
+}
+
+:root[data-theme='dark'] .record-total dd,
+:root[data-theme='dark'] .calculated-total strong,
+:root[data-theme='dark'] .auth-brand.MuiTypography-root {
+  color: #90caf9;
+}
+
+:root[data-theme='dark'] .edit-button.MuiButton-root,
+:root[data-theme='dark'] .cancel-button.MuiButton-root {
+  color: #90caf9;
+  border-color: #90caf9;
+  background: transparent;
+}
+
+:root[data-theme='dark'] .delete-button.MuiButton-root {
+  color: #f28b82;
+  border-color: #f28b82;
+}
+
+:root[data-theme='dark'] .save-button.MuiButton-root {
+  color: #102030;
+  background: #90caf9;
+  border-color: #90caf9;
+}
+
+:root[data-theme='dark'] .confirm-delete-button.MuiButton-root {
+  color: #1d1110;
+  background: #f28b82;
+  border-color: #f28b82;
+}
+
+:root[data-theme='dark'] .auth-page {
+  background: #101820;
+}
+
+:root[data-theme='dark'] .auth-toggle.MuiButton-root {
+  color: #90caf9;
+}
+
+:root[data-theme='dark'] .auth-submit.MuiButton-root {
+  background: #1976d2;
+}
+
+:root[data-theme='dark'] .auth-form .MuiOutlinedInput-root {
+  color: #edf2f7;
+}
+
+:root[data-theme='dark'] .auth-form .MuiOutlinedInput-notchedOutline {
+  border-color: #627487;
+}
+
+:root[data-theme='dark'] .auth-form .MuiInputLabel-root {
+  color: #b0becb;
+}
+
+:root[data-theme='dark']
+  .auth-form
+  .MuiOutlinedInput-root.Mui-focused
+  .MuiOutlinedInput-notchedOutline {
+  border-color: #90caf9;
+}
+
+:root[data-theme='dark'] .auth-form .MuiInputLabel-root.Mui-focused {
+  color: #90caf9;
+}
+
+.edit-button.MuiButton-root,
+.delete-button.MuiButton-root {
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.edit-button.MuiButton-root:hover {
+  color: #fff;
+  background-color: #1976d2;
+  border-color: #1976d2;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.delete-button.MuiButton-root:hover {
+  color: #fff;
+  background-color: #d32f2f;
+  border-color: #d32f2f;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+:root[data-theme='dark'] .edit-button.MuiButton-root:hover {
+  color: #102030;
+  background-color: #90caf9;
+  border-color: #90caf9;
+}
+
+:root[data-theme='dark'] .delete-button.MuiButton-root:hover {
+  color: #1d1110;
+  background-color: #f28b82;
+  border-color: #f28b82;
+}
+
+.edit-button.MuiButton-root:focus-visible,
+.delete-button.MuiButton-root:focus-visible {
+  outline: 3px solid #1976d2;
+  outline-offset: 2px;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+:root[data-theme='dark'] .edit-button.MuiButton-root:focus-visible,
+:root[data-theme='dark'] .delete-button.MuiButton-root:focus-visible {
+  outline-color: #90caf9;
 }

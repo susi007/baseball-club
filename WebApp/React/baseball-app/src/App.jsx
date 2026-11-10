@@ -6,8 +6,10 @@ import {
   Card,
   CardContent,
   CircularProgress,
+  FormControlLabel,
   IconButton,
   Paper,
+  Switch,
   Tab,
   Tabs,
   TextField,
@@ -47,7 +49,7 @@ function formatDate(date) {
   return String(date).slice(0, 10)
 }
 
-function App() {
+function App({ darkMode, onDarkModeChange }) {
   const [user, setUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [profile, setProfile] = useState(null)
@@ -573,7 +575,20 @@ function App() {
   return (
     <div className="app">
       <header className="header">
-        <Typography component="h1" variant="h4">支出管理リスト</Typography>
+        <div className="header-brand">
+          <Typography component="h1" variant="h4">支出管理リスト</Typography>
+          <FormControlLabel
+            className="theme-switch"
+            control={
+              <Switch
+                checked={darkMode}
+                onChange={(event) => onDarkModeChange(event.target.checked)}
+                inputProps={{ 'aria-label': 'ダークモード' }}
+              />
+            }
+            label="ダークモード"
+          />
+        </div>
 
         <div className="header-account">
           <Typography component="span" className="account-nickname" variant="subtitle1">

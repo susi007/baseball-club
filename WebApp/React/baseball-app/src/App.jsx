@@ -47,7 +47,7 @@ function App() {
   const [isSavingNickname, setIsSavingNickname] = useState(false)
   const [isSummaryCompact, setIsSummaryCompact] = useState(false)
   const [activeManagementTab, setActiveManagementTab] = useState('income')
-  const [isEmailVisible, setIsEmailVisible] = useState(false)
+  const [isAccountInfoVisible, setIsAccountInfoVisible] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
   const successMessageTimer = useRef(null)
   const managementTabRefs = useRef([])
@@ -578,20 +578,65 @@ function App() {
         <h1>支出管理リスト</h1>
 
         <div className="header-account">
-          <button
-            type="button"
-            className="nickname-button"
-            aria-expanded={isEmailVisible}
-            aria-controls="account-email"
-            onClick={() => setIsEmailVisible((visible) => !visible)}
-          >
+          <span className="account-nickname">
             {profile.nickname}
-          </button>
-          {isEmailVisible && (
-            <span id="account-email" className="account-email">
+          </span>
+          <span
+            id="account-email"
+            className="account-email"
+            aria-label={
+              isAccountInfoVisible ? user.email : 'メールアドレス非表示'
+            }
+          >
+            <span
+              className="account-email-value"
+              data-visible={isAccountInfoVisible}
+              aria-hidden="true"
+            >
               {user.email}
             </span>
-          )}
+            {!isAccountInfoVisible && (
+              <span className="account-email-mask" aria-hidden="true">
+                {user.email?.replace(/[^@]/g, '•')}
+              </span>
+            )}
+          </span>
+          <button
+            type="button"
+            className="account-visibility-button"
+            aria-label={
+              isAccountInfoVisible ? 'メールアドレスを隠す' : 'メールアドレスを表示'
+            }
+            aria-pressed={isAccountInfoVisible}
+            aria-controls="account-email"
+            onClick={() =>
+              setIsAccountInfoVisible((visible) => !visible)
+            }
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              {isAccountInfoVisible ? (
+                <>
+                  <path d="M3 3l18 18" />
+                  <path d="M10.6 10.6a2 2 0 002.8 2.8" />
+                  <path d="M9.9 5.2A10.8 10.8 0 0112 5c5 0 8.5 4.2 9.5 7-.4 1.1-1.2 2.3-2.3 3.4" />
+                  <path d="M6.2 6.2C3.9 7.6 2.7 9.8 2.5 12c.5 1.4 1.5 2.8 3 4a10 10 0 006.5 2c1 0 1.9-.2 2.8-.5" />
+                </>
+              ) : (
+                <>
+                  <path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z" />
+                  <circle cx="12" cy="12" r="3" />
+                </>
+              )}
+            </svg>
+          </button>
           <button
             type="button"
             className="logout-button"

@@ -28,13 +28,14 @@ const ADMIN_EMAILS = [
 ]
 
 const categories = [
-  { value: '練習玉', label: '練習球' },
+  { value: '練習球', label: '練習球' },
   { value: '公認球', label: '公認球' },
   { value: 'バット', label: 'バット' },
   { value: '防具', label: '防具' },
   { value: 'ヘルメット', label: 'ヘルメット' },
   { value: 'グローブ', label: 'グローブ' },
   { value: 'グラウンド', label: 'グラウンド' },
+  { value: 'その他', label: 'その他' },
 ]
 
 function getToday() {

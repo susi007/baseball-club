@@ -13,6 +13,10 @@ body {
   line-height: 1.5;
 }
 
+input {
+  caret-color: #212529;
+}
+
 .header {
   background: transparent;
   color: #0dcaf0;
@@ -179,7 +183,7 @@ section h2 {
 .management-tabs {
   display: flex;
   align-items: flex-end;
-  width: 66.667%;
+  width: calc(100% - 20px);
   margin-right: auto;
   margin-left: auto;
   margin-bottom: 0;

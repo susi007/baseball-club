@@ -707,7 +707,7 @@ section h2 {
   }
 
   .summary-cards .card p {
-    font-size: clamp(0.75rem, 3.2vw, 1.15rem);
+    font-size: clamp(0.9rem, 4vw, 1.35rem);
   }
 
   .management-area,

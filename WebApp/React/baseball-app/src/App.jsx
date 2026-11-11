@@ -42,9 +42,8 @@ const MANAGEMENT_TAB_KEY = 'baseball-club-management-tab'
 const PROFILE_CACHE_KEY = 'baseball-club-profile-cache'
 
 function getSavedManagementTab() {
-  return window.sessionStorage.getItem(MANAGEMENT_TAB_KEY) === 'expense'
-    ? 'expense'
-    : 'income'
+  const savedTab = window.sessionStorage.getItem(MANAGEMENT_TAB_KEY)
+  return ['expense', 'equipment'].includes(savedTab) ? savedTab : 'income'
 }
 
 function getCachedProfileState() {
@@ -220,6 +219,19 @@ function App({ darkMode, onDarkModeChange }) {
   // 以下は既存のコードを続ける
   const [incomeRecords, setIncomeRecords] = useState([])
   const [inventory, setInventory] = useState([])
+  const [equipmentItems, setEquipmentItems] = useState([])
+  const [equipmentTarget, setEquipmentTarget] = useState(null)
+  const [equipmentAssignments, setEquipmentAssignments] = useState([])
+  const [equipmentChangedOn, setEquipmentChangedOn] = useState('')
+  const [equipmentError, setEquipmentError] = useState('')
+  const [isSavingEquipment, setIsSavingEquipment] = useState(false)
+  const [historyTarget, setHistoryTarget] = useState(null)
+  const [equipmentHistory, setEquipmentHistory] = useState([])
+  const [historyError, setHistoryError] = useState('')
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+  const [disposalTarget, setDisposalTarget] = useState(null)
+  const [disposalError, setDisposalError] = useState('')
+  const [isDisposingEquipment, setIsDisposingEquipment] = useState(false)
 
   const [incomeDate, setIncomeDate] = useState(getToday())
   const [incomeName, setIncomeName] = useState('')
@@ -235,6 +247,8 @@ function App({ darkMode, onDarkModeChange }) {
 
   const [ownerFilter, setOwnerFilter] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
+  const [equipmentManagerFilter, setEquipmentManagerFilter] = useState('')
+  const [equipmentCategoryFilter, setEquipmentCategoryFilter] = useState('')
 
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [editTarget, setEditTarget] = useState(null)
@@ -250,17 +264,37 @@ function App({ darkMode, onDarkModeChange }) {
 
     async function loadData() {
       try {
-        const [incomeResult, inventoryResult] = await Promise.all([
-          supabase.from('income').select('*').order('id'),
-          supabase.from('inventory').select('*').order('id'),
+        const [incomeResult, inventoryResult, equipmentResult] = await Promise.all([
+          supabase
+            .from('income')
+            .select('*')
+            .order('date', { ascending: false })
+            .order('id', { ascending: false }),
+          supabase
+            .from('inventory')
+            .select('*')
+            .order('date', { ascending: false })
+            .order('id', { ascending: false }),
+          supabase
+            .from('equipment_items')
+            .select(
+              'id, name, category, changed_on, disposed_on, equipment_assignments(manager, quantity)'
+            )
+            .neq('category', 'グラウンド')
+            .is('disposed_on', null)
+            .order('changed_on', { ascending: false })
+            .order('name'),
         ])
 
         if (incomeResult.error) throw incomeResult.error
         if (inventoryResult.error) throw inventoryResult.error
+        if (equipmentResult.error) throw equipmentResult.error
 
         if (!cancelled) {
+          setError('')
           setIncomeRecords(incomeResult.data)
           setInventory(inventoryResult.data)
+          setEquipmentItems(equipmentResult.data)
         }
       } catch (err) {
         if (!cancelled) setError(err.message)
@@ -291,6 +325,10 @@ function App({ darkMode, onDarkModeChange }) {
 
   // 残高
   const balance = totalIncome - totalExpense
+  const sortedIncomeRecords = [...incomeRecords].sort(
+    (left, right) =>
+      right.date.localeCompare(left.date) || right.id - left.id
+  )
 
   function showSuccessMessage(message) {
     window.clearTimeout(successMessageTimer.current)
@@ -358,13 +396,31 @@ function App({ darkMode, onDarkModeChange }) {
       if (insertError) throw insertError
       setInventory((current) => [...current, savedItem])
 
+      const { data: updatedEquipmentItems, error: equipmentLoadError } =
+        await supabase
+          .from('equipment_items')
+          .select(
+            'id, name, category, changed_on, disposed_on, equipment_assignments(manager, quantity)'
+          )
+          .neq('category', 'グラウンド')
+          .is('disposed_on', null)
+          .order('changed_on', { ascending: false })
+          .order('name')
+      if (equipmentLoadError) {
+        setError(
+          `支出は登録されましたが、備品管理の表示を更新できませんでした: ${equipmentLoadError.message}`
+        )
+      } else {
+        setEquipmentItems(updatedEquipmentItems)
+      }
+
       setItemDate(getToday())
       setName('')
       setCategory('')
       setItemAmount('')
       setQuantity('1')
       setOwner('')
-      showSuccessMessage('支出を登録しました。')
+      if (!equipmentLoadError) showSuccessMessage('支出を登録しました。')
     } catch (err) {
       setError(err.message)
     }
@@ -495,7 +551,7 @@ function App({ darkMode, onDarkModeChange }) {
   }
 
 
-  // 絞り込みに使う所持者一覧
+  // 絞り込みに使う購入者一覧
   const owners = [...new Set(inventory.map((item) => item.owner))]
   const ownerOptions = [...new Set(profiles.map((item) => item.nickname))]
 
@@ -506,7 +562,474 @@ function App({ darkMode, onDarkModeChange }) {
       !categoryFilter || item.category === categoryFilter
 
     return matchesOwner && matchesCategory
+  }).sort(
+    (left, right) =>
+      right.date.localeCompare(left.date) || right.id - left.id
+  )
+  const sortedEquipmentItems = [...equipmentItems].sort(
+    (left, right) =>
+      right.changed_on.localeCompare(left.changed_on) ||
+      left.name.localeCompare(right.name)
+  )
+  const equipmentManagerOptions = [
+    ...new Set(
+      equipmentItems.flatMap((item) =>
+        item.equipment_assignments.map((assignment) => assignment.manager)
+      )
+    ),
+  ].sort((left, right) => left.localeCompare(right))
+  const equipmentCategoryOptions = [
+    ...new Set(equipmentItems.map((item) => item.category)),
+  ].sort((left, right) => left.localeCompare(right))
+  const filteredEquipmentItems = sortedEquipmentItems.filter((item) => {
+    const matchesManager =
+      !equipmentManagerFilter ||
+      item.equipment_assignments.some(
+        (assignment) => assignment.manager === equipmentManagerFilter
+      )
+    const matchesCategory =
+      !equipmentCategoryFilter || item.category === equipmentCategoryFilter
+
+    return matchesManager && matchesCategory
   })
+
+  function openEquipmentEditor(item) {
+    setEquipmentError('')
+    setEquipmentTarget(item)
+    setEquipmentChangedOn(formatDate(item.changed_on))
+    setEquipmentAssignments(
+      item.equipment_assignments.map((assignment) => ({
+        manager: assignment.manager,
+        quantity: String(assignment.quantity),
+      }))
+    )
+  }
+
+  async function handleEquipmentSubmit(event) {
+    event.preventDefault()
+    if (!equipmentTarget) return
+
+    if (equipmentAssignments.length === 0) {
+      setEquipmentError('管理者と個数を1件以上登録してください。')
+      return
+    }
+
+    const managers = equipmentAssignments.map((assignment) =>
+      assignment.manager.trim()
+    )
+    if (managers.some((manager) => !manager)) {
+      setEquipmentError('すべての管理者を選択してください。')
+      return
+    }
+    if (new Set(managers).size !== managers.length) {
+      setEquipmentError('同じ管理者を複数行に登録できません。')
+      return
+    }
+    if (
+      equipmentAssignments.some(
+        (assignment) =>
+          !Number.isInteger(Number(assignment.quantity)) ||
+          Number(assignment.quantity) < 1 ||
+          Number(assignment.quantity) > 2147483647
+      )
+    ) {
+      setEquipmentError('個数は1以上2,147,483,647以下の整数を入力してください。')
+      return
+    }
+    if (hasEquipmentQuantityMismatch) {
+      setEquipmentError(
+        `管理者ごとの個数合計（${equipmentAssignedQuantity}個）を購入済み個数（${equipmentPurchasedQuantity}個）に合わせてください。`
+      )
+      return
+    }
+
+    setEquipmentError('')
+    setIsSavingEquipment(true)
+    try {
+      const { error: saveError } = await supabase.rpc(
+        'save_equipment_assignments',
+        {
+          p_equipment_id: equipmentTarget.id,
+          p_changed_on: equipmentChangedOn,
+          p_assignments: equipmentAssignments.map((assignment) => ({
+            manager: assignment.manager.trim(),
+            quantity: Number(assignment.quantity),
+          })),
+        }
+      )
+      if (saveError) throw saveError
+
+      const { data, error: loadError } = await supabase
+        .from('equipment_items')
+        .select(
+          'id, name, category, changed_on, equipment_assignments(manager, quantity)'
+        )
+        .neq('category', 'グラウンド')
+        .is('disposed_on', null)
+        .order('changed_on', { ascending: false })
+        .order('name')
+      if (loadError) throw loadError
+
+      setEquipmentItems(data)
+      setEquipmentTarget(null)
+    } catch (err) {
+      setEquipmentError(err.message)
+    } finally {
+      setIsSavingEquipment(false)
+    }
+  }
+
+  async function openEquipmentHistory(item) {
+    setHistoryTarget(item)
+    setEquipmentHistory([])
+    setHistoryError('')
+    setIsLoadingHistory(true)
+    try {
+      const { data, error: loadError } = await supabase
+        .from('equipment_history')
+        .select(
+          'id, changed_on, before_state, after_state, changed_by_nickname, change_type'
+        )
+        .eq('equipment_id', item.id)
+        .order('created_at', { ascending: false })
+      if (loadError) throw loadError
+      setEquipmentHistory(data)
+    } catch (err) {
+      setHistoryError(err.message)
+    } finally {
+      setIsLoadingHistory(false)
+    }
+  }
+
+  async function confirmEquipmentDisposal() {
+    if (!disposalTarget) return
+
+    setDisposalError('')
+    setIsDisposingEquipment(true)
+    try {
+      const { error: disposeError } = await supabase.rpc(
+        'dispose_equipment',
+        { p_equipment_id: disposalTarget.id }
+      )
+      if (disposeError) throw disposeError
+
+      setEquipmentItems((current) =>
+        current.filter((item) => item.id !== disposalTarget.id)
+      )
+      setDisposalTarget(null)
+      showSuccessMessage('備品を廃棄しました。')
+    } catch (err) {
+      setDisposalError(err.message)
+    } finally {
+      setIsDisposingEquipment(false)
+    }
+  }
+
+  function renderInventoryList(headingId, heading) {
+    return (
+      <section className="management-panel">
+        <Typography component="h3" id={headingId} variant="h6">
+          {heading}
+        </Typography>
+
+        <div className="filter-area">
+          <label>
+            購入者で絞り込み
+            <select
+              value={ownerFilter}
+              onChange={(event) => setOwnerFilter(event.target.value)}
+            >
+              <option value="">すべて</option>
+              {owners.map((person) => (
+                <option key={person} value={person}>
+                  {person}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            カテゴリーで絞り込み
+            <select
+              value={categoryFilter}
+              onChange={(event) => setCategoryFilter(event.target.value)}
+            >
+              <option value="">すべて</option>
+              {categories.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {loading ? (
+          <Typography>読み込み中...</Typography>
+        ) : filteredInventory.length === 0 ? (
+          <Typography>該当する備品はありません。</Typography>
+        ) : (
+          <ul className="record-list" aria-labelledby={headingId}>
+            {filteredInventory.map((item) => (
+              <Card component="li" className="record-card" key={item.id}>
+                <CardContent>
+                  <div className="record-card-heading">
+                    <h4>{item.name}</h4>
+                    <time dateTime={formatDate(item.date)}>
+                      {formatDate(item.date)}
+                    </time>
+                  </div>
+                  <dl className="record-details">
+                    <div className="expense-category">
+                      <dt>カテゴリー</dt>
+                      <dd>
+                        {categories.find(
+                          (option) => option.value === item.category
+                        )?.label || item.category}
+                      </dd>
+                    </div>
+                    <div className="expense-unit-cost">
+                      <dt>購入額</dt>
+                      <dd>¥{Number(item.amount).toLocaleString()}</dd>
+                    </div>
+                    <div className="expense-quantity">
+                      <dt>個数</dt>
+                      <dd>{item.quantity}</dd>
+                    </div>
+                    <div className="expense-owner">
+                      <dt>購入者</dt>
+                      <dd>{item.owner}</dd>
+                    </div>
+                    <div className="record-total-row">
+                      <div className="record-total">
+                        <dt>支出</dt>
+                        <dd>
+                          ¥{(
+                            Number(item.amount) * Number(item.quantity)
+                          ).toLocaleString()}
+                          <span className="unit-price">
+                            {Number(item.amount).toLocaleString()}円/個
+                          </span>
+                        </dd>
+                      </div>
+                      {isAdmin && (
+                        <div className="row-actions">
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            type="button"
+                            className="edit-button"
+                            onClick={() => openEditDialog('inventory', item)}
+                          >
+                            編集
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            type="button"
+                            className="delete-button"
+                            onClick={() => openDeleteDialog('inventory', item)}
+                          >
+                            削除
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </dl>
+                </CardContent>
+              </Card>
+            ))}
+          </ul>
+        )}
+      </section>
+    )
+  }
+
+  function getEquipmentQuantities(item) {
+    const purchasedQuantity = inventory
+      .filter(
+        (purchase) =>
+          purchase.name === item.name && purchase.category !== 'グラウンド'
+      )
+      .reduce((total, purchase) => total + Number(purchase.quantity), 0)
+    const assignedQuantity = item.equipment_assignments.reduce(
+      (total, assignment) => total + Number(assignment.quantity),
+      0
+    )
+
+    return { purchasedQuantity, assignedQuantity }
+  }
+
+  function renderEquipmentList() {
+    return (
+      <section className="management-panel">
+        <Typography component="h3" id="equipment-list-heading" variant="h6">
+          備品一覧
+        </Typography>
+        {loading ? (
+          <Typography>読み込み中...</Typography>
+        ) : equipmentItems.length === 0 ? (
+          <Typography>登録された備品はありません。</Typography>
+        ) : (
+          <>
+            <div className="filter-area">
+              <label>
+                管理者で絞り込み
+                <select
+                  value={equipmentManagerFilter}
+                  onChange={(event) =>
+                    setEquipmentManagerFilter(event.target.value)
+                  }
+                >
+                  <option value="">すべて</option>
+                  {equipmentManagerOptions.map((manager) => (
+                    <option key={manager} value={manager}>
+                      {manager}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                カテゴリーで絞り込み
+                <select
+                  value={equipmentCategoryFilter}
+                  onChange={(event) =>
+                    setEquipmentCategoryFilter(event.target.value)
+                  }
+                >
+                  <option value="">すべて</option>
+                  {equipmentCategoryOptions.map((categoryValue) => (
+                    <option key={categoryValue} value={categoryValue}>
+                      {categories.find(
+                        (categoryOption) =>
+                          categoryOption.value === categoryValue
+                      )?.label || categoryValue}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            {filteredEquipmentItems.length === 0 ? (
+              <Typography>条件に一致する備品はありません。</Typography>
+            ) : (
+          <ul className="record-list" aria-labelledby="equipment-list-heading">
+            {filteredEquipmentItems.map((item) => {
+              const { purchasedQuantity, assignedQuantity } =
+                getEquipmentQuantities(item)
+
+              return (
+                <Card component="li" className="record-card" key={item.id}>
+                <CardContent>
+                  <div className="record-card-heading">
+                    <h4>{item.name}</h4>
+                    <time dateTime={formatDate(item.changed_on)}>
+                      変更日: {formatDate(item.changed_on)}
+                    </time>
+                  </div>
+                  <dl className="record-details equipment-details">
+                    <div className="equipment-category">
+                      <dt>カテゴリー</dt>
+                      <dd>
+                        {categories.find(
+                          (categoryOption) =>
+                            categoryOption.value === item.category
+                        )?.label || item.category}
+                      </dd>
+                    </div>
+                    <div className="equipment-managers">
+                      <dt>
+                        管理者・個数
+                        <span className="equipment-count-legend">
+                          （割当数 / 購入済み数）
+                        </span>
+                      </dt>
+                      <dd>
+                        {item.equipment_assignments
+                          .slice()
+                          .sort((left, right) =>
+                            left.manager.localeCompare(right.manager)
+                          )
+                          .map((assignment) => (
+                            <span
+                              className="equipment-manager"
+                              key={assignment.manager}
+                            >
+                              <span>{assignment.manager}</span>
+                              <span className="equipment-count-fraction">
+                                <strong>{assignment.quantity}個</strong>
+                                <span aria-hidden="true">/</span>
+                                <span>{purchasedQuantity}個</span>
+                              </span>
+                            </span>
+                          ))}
+                      </dd>
+                    </div>
+                  </dl>
+                  {purchasedQuantity !== assignedQuantity && (
+                    <p className="equipment-quantity-error" role="alert">
+                      個数が一致していません。購入済み個数に合わせてください。
+                    </p>
+                  )}
+                  <div className="row-actions equipment-actions">
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      type="button"
+                      className="edit-button"
+                      onClick={() => openEquipmentEditor(item)}
+                    >
+                      管理者・個数を変更
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      type="button"
+                      className="edit-button"
+                      onClick={() => openEquipmentHistory(item)}
+                    >
+                      変更履歴
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      type="button"
+                      className="delete-button"
+                      onClick={() => {
+                        setDisposalError('')
+                        setDisposalTarget(item)
+                      }}
+                    >
+                      廃棄
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+              )
+            })}
+          </ul>
+            )}
+          </>
+        )}
+      </section>
+    )
+  }
+
+  const equipmentPurchasedQuantity = equipmentTarget
+    ? inventory
+        .filter(
+          (item) =>
+            item.name === equipmentTarget.name &&
+            item.category !== 'グラウンド'
+        )
+        .reduce((total, item) => total + Number(item.quantity), 0)
+    : 0
+  const equipmentAssignedQuantity = equipmentAssignments.reduce(
+    (total, assignment) => total + Number(assignment.quantity || 0),
+    0
+  )
+  const hasEquipmentQuantityMismatch =
+    equipmentAssignedQuantity !== equipmentPurchasedQuantity
 
   if (authLoading) {
     return (
@@ -603,7 +1126,7 @@ function App({ darkMode, onDarkModeChange }) {
             ニックネーム登録
           </Typography>
           <Typography className="auth-description">
-            備品の所有者として表示するニックネームを設定してください。
+            備品の購入者として表示するニックネームを設定してください。
           </Typography>
           <form className="auth-form" onSubmit={handleNicknameSubmit}>
             <TextField
@@ -769,6 +1292,7 @@ function App({ darkMode, onDarkModeChange }) {
         >
           <Tab id="income-tab" aria-controls="income-panel" value="income" label="収入管理" />
           <Tab id="expense-tab" aria-controls="expense-panel" value="expense" label="支出管理" />
+          <Tab id="equipment-tab" aria-controls="equipment-panel" value="equipment" label="備品管理" />
         </Tabs>
 
         <Paper
@@ -852,7 +1376,7 @@ function App({ darkMode, onDarkModeChange }) {
             <Typography>登録された収入はありません。</Typography>
           ) : (
             <ul className="record-list" aria-labelledby="income-list-heading">
-              {incomeRecords.map((record) => (
+              {sortedIncomeRecords.map((record) => (
                 <Card component="li" className="record-card" key={record.id}>
                   <CardContent>
                   <div className="record-card-heading">
@@ -987,7 +1511,7 @@ function App({ darkMode, onDarkModeChange }) {
               </label>
 
               <label>
-                所持者
+                購入者
                 <select
                   value={owner}
                   onChange={(event) => setOwner(event.target.value)}
@@ -1016,120 +1540,319 @@ function App({ darkMode, onDarkModeChange }) {
           </section>
           )}
 
-        <section className="management-panel">
-          <Typography component="h3" id="expense-list-heading" variant="h6">支出一覧</Typography>
+        {renderInventoryList('expense-list-heading', '支出一覧')}
+        </Paper>
 
-          <div className="filter-area">
-            <label>
-              所持者で絞り込み
-              <select
-                value={ownerFilter}
-                onChange={(event) => setOwnerFilter(event.target.value)}
-              >
-                <option value="">すべて</option>
-                {owners.map((person) => (
-                  <option key={person} value={person}>
-                    {person}
-                  </option>
-                ))}
-              </select>
-            </label>
+        <Paper
+          elevation={0}
+          className="management-area inventory-area"
+          id="equipment-panel"
+          role="tabpanel"
+          aria-labelledby="equipment-tab"
+          tabIndex={0}
+          hidden={activeManagementTab !== 'equipment'}
+        >
+          {renderEquipmentList()}
+        </Paper>
 
-            <label>
-              カテゴリーで絞り込み
-              <select
-                value={categoryFilter}
-                onChange={(event) => setCategoryFilter(event.target.value)}
-              >
-                <option value="">すべて</option>
-                {categories.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          {loading ? (
-            <Typography>読み込み中...</Typography>
-          ) : filteredInventory.length === 0 ? (
-            <Typography>該当する備品はありません。</Typography>
-          ) : (
-            <ul className="record-list" aria-labelledby="expense-list-heading">
-              {filteredInventory.map((item) => (
-                <Card component="li" className="record-card" key={item.id}>
-                  <CardContent>
-                  <div className="record-card-heading">
-                    <h4>{item.name}</h4>
-                    <time dateTime={formatDate(item.date)}>
-                      {formatDate(item.date)}
-                    </time>
+        {equipmentTarget && (
+          <div className="modal-overlay">
+            <form
+              className="delete-modal edit-modal equipment-modal"
+              onSubmit={handleEquipmentSubmit}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="equipment-edit-title"
+            >
+              <h2 id="equipment-edit-title">
+                {equipmentTarget.name}の管理情報
+              </h2>
+              <p className="equipment-quantity-summary">
+                管理者割当: {equipmentAssignedQuantity}個 / 購入済み: {equipmentPurchasedQuantity}個
+              </p>
+              {equipmentError && (
+                <Alert severity="error" role="alert">
+                  {equipmentError}
+                </Alert>
+              )}
+              <label>
+                変更日
+                <input
+                  type="date"
+                  value={equipmentChangedOn}
+                  onChange={(event) =>
+                    setEquipmentChangedOn(event.target.value)
+                  }
+                  required
+                />
+              </label>
+              <div className="equipment-assignment-fields">
+                {equipmentAssignments.map((assignment, index) => (
+                  <div className="equipment-assignment-row" key={index}>
+                    <label>
+                      管理者
+                      <select
+                        value={assignment.manager}
+                        onChange={(event) =>
+                          setEquipmentAssignments((current) =>
+                            current.map((entry, entryIndex) =>
+                              entryIndex === index
+                                ? { ...entry, manager: event.target.value }
+                                : entry
+                            )
+                          )
+                        }
+                        required
+                      >
+                        <option value="">選択してください</option>
+                        {!ownerOptions.includes(assignment.manager) &&
+                          assignment.manager && (
+                            <option value={assignment.manager}>
+                              {assignment.manager}
+                            </option>
+                          )}
+                        {ownerOptions
+                          .filter(
+                            (nickname) =>
+                              nickname === assignment.manager ||
+                              !equipmentAssignments.some(
+                                (entry, entryIndex) =>
+                                  entryIndex !== index &&
+                                  entry.manager === nickname
+                              )
+                          )
+                          .map((nickname) => (
+                            <option key={nickname} value={nickname}>
+                              {nickname}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                    <label>
+                      個数
+                      <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={assignment.quantity}
+                        onChange={(event) =>
+                          setEquipmentAssignments((current) =>
+                            current.map((entry, entryIndex) =>
+                              entryIndex === index
+                                ? { ...entry, quantity: event.target.value }
+                                : entry
+                            )
+                          )
+                        }
+                        required
+                      />
+                    </label>
+                    <Button
+                      type="button"
+                      variant="outlined"
+                      className="delete-button"
+                      onClick={() =>
+                        setEquipmentAssignments((current) =>
+                          current.filter(
+                            (_entry, entryIndex) => entryIndex !== index
+                          )
+                        )
+                      }
+                    >
+                      削除
+                    </Button>
                   </div>
-                  <dl className="record-details">
-                    <div className="expense-category">
-                      <dt>カテゴリー</dt>
-                      <dd>
-                        {categories.find(
-                          (option) => option.value === item.category
-                        )?.label || item.category}
-                      </dd>
-                    </div>
-                    <div className="expense-unit-cost">
-                      <dt>購入額</dt>
-                      <dd>¥{Number(item.amount).toLocaleString()}</dd>
-                    </div>
-                    <div className="expense-quantity">
-                      <dt>個数</dt>
-                      <dd>{item.quantity}</dd>
-                    </div>
-                    <div className="expense-owner">
-                      <dt>所持者</dt>
-                      <dd>{item.owner}</dd>
-                    </div>
-                    <div className="record-total-row">
-                      <div className="record-total">
-                        <dt>支出</dt>
-                        <dd>
-                          ¥{(
-                            Number(item.amount) * Number(item.quantity)
-                          ).toLocaleString()}
-                          <span className="unit-price">
-                            {Number(item.amount).toLocaleString()}円/個
-                          </span>
-                        </dd>
+                ))}
+              </div>
+              <Button
+                type="button"
+                variant="outlined"
+                onClick={() =>
+                  setEquipmentAssignments((current) => [
+                    ...current,
+                    { manager: '', quantity: '1' },
+                  ])
+                }
+              >
+                管理者を追加
+              </Button>
+              {hasEquipmentQuantityMismatch && (
+              <Alert className="equipment-save-error" severity="error" role="alert">
+                管理者ごとの個数合計を購入済み個数に合わせてください。
+              </Alert>
+              )}
+              <div className="modal-actions">
+                <Button
+                  variant="outlined"
+                  type="button"
+                  className="cancel-button"
+                  onClick={() => setEquipmentTarget(null)}
+                  disabled={isSavingEquipment}
+                >
+                  キャンセル
+                </Button>
+                <Button
+                  variant="contained"
+                  type="submit"
+                  className="save-button"
+                  disabled={isSavingEquipment || hasEquipmentQuantityMismatch}
+                >
+                  {isSavingEquipment ? '保存中...' : '変更を保存'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {disposalTarget && (
+          <div className="modal-overlay">
+            <section
+              className="delete-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="equipment-disposal-title"
+            >
+              <h2 id="equipment-disposal-title">備品の廃棄確認</h2>
+              <p>
+                「{disposalTarget.name}」を廃棄しますか？廃棄後は備品一覧から非表示になりますが、支出一覧と支出合計には購入記録が残ります。変更履歴も保持されます。
+              </p>
+              {disposalError && (
+                <Alert severity="error" role="alert" sx={{ mt: 2 }}>
+                  {disposalError}
+                </Alert>
+              )}
+              <div className="modal-actions">
+                <Button
+                  variant="outlined"
+                  type="button"
+                  className="cancel-button"
+                  onClick={() => setDisposalTarget(null)}
+                  disabled={isDisposingEquipment}
+                >
+                  キャンセル
+                </Button>
+                <Button
+                  variant="contained"
+                  color="error"
+                  type="button"
+                  className="confirm-delete-button"
+                  onClick={confirmEquipmentDisposal}
+                  disabled={isDisposingEquipment}
+                >
+                  {isDisposingEquipment ? '廃棄中...' : '廃棄する'}
+                </Button>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {historyTarget && (
+          <div className="modal-overlay">
+            <section
+              className="delete-modal equipment-history-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="equipment-history-title"
+            >
+              <div className="equipment-history-header">
+                <h2 id="equipment-history-title">
+                  {historyTarget.name}の変更履歴
+                </h2>
+                <IconButton
+                  className="equipment-history-close"
+                  aria-label="変更履歴を閉じる"
+                  onClick={() => setHistoryTarget(null)}
+                  size="small"
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24">
+                    <path d="M18 6 6 18M6 6l12 12" />
+                  </svg>
+                </IconButton>
+              </div>
+              {historyError && (
+                <Alert severity="error" role="alert">
+                  {historyError}
+                </Alert>
+              )}
+              {isLoadingHistory ? (
+                <Typography>履歴を読み込み中...</Typography>
+              ) : equipmentHistory.length === 0 && !historyError ? (
+                <Typography>変更履歴はありません。</Typography>
+              ) : (
+                <ol className="equipment-history-list">
+                  {equipmentHistory.map((entry) => (
+                    <li
+                      className={
+                        entry.change_type === 'disposal'
+                          ? 'is-disposal'
+                          : ''
+                      }
+                      key={entry.id}
+                    >
+                      <div className="equipment-history-meta">
+                        <time dateTime={formatDate(entry.changed_on)}>
+                          {formatDate(entry.changed_on)}
+                        </time>
+                        <span>{entry.changed_by_nickname}</span>
                       </div>
-                      {isAdmin && (
-                        <div className="row-actions">
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            type="button"
-                            className="edit-button"
-                            onClick={() => openEditDialog('inventory', item)}
+                      {entry.change_type === 'disposal' ? (
+                        <div className="equipment-history-disposal">
+                          <span className="equipment-history-disposal-icon" aria-hidden="true">
+                            ×
+                          </span>
+                          備品を廃棄しました。
+                        </div>
+                      ) : (
+                        <div className="equipment-history-change">
+                          <div className="equipment-history-state">
+                            <span className="equipment-history-state-label">
+                              変更前
+                            </span>
+                            {entry.before_state.length === 0
+                              ? <span className="equipment-history-empty">初期状態</span>
+                              : entry.before_state
+                                  .map((allocation) => (
+                                    <span
+                                      className="equipment-history-allocation"
+                                      key={allocation.manager}
+                                    >
+                                      <span>{allocation.manager}</span>
+                                      <strong>{allocation.quantity}個</strong>
+                                    </span>
+                                  ))}
+                          </div>
+                          <span
+                            className="equipment-history-arrow"
+                            aria-label="変更後"
                           >
-                            編集
-                          </Button>
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            type="button"
-                            className="delete-button"
-                            onClick={() => openDeleteDialog('inventory', item)}
-                          >
-                            削除
-                          </Button>
+                            →
+                          </span>
+                          <div className="equipment-history-state is-after">
+                            <span className="equipment-history-state-label">
+                              変更後
+                            </span>
+                            {entry.after_state.length === 0
+                              ? <span className="equipment-history-empty">管理者なし</span>
+                              : entry.after_state
+                                  .map((allocation) => (
+                                    <span
+                                      className="equipment-history-allocation"
+                                      key={allocation.manager}
+                                    >
+                                      <span>{allocation.manager}</span>
+                                      <strong>{allocation.quantity}個</strong>
+                                    </span>
+                                  ))}
+                          </div>
                         </div>
                       )}
-                    </div>
-                  </dl>
-                  </CardContent>
-                </Card>
-              ))}
-            </ul>
-          )}
-        </section>
-        </Paper>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </section>
+          </div>
+        )}
 
         {editTarget && (
           <div className="modal-overlay">
@@ -1284,7 +2007,7 @@ function App({ darkMode, onDarkModeChange }) {
                       />
                     </label>
                     <label>
-                      所持者
+                      購入者
                       <select
                         value={editForm.owner}
                         onChange={(event) =>

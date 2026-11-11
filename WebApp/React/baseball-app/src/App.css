@@ -1620,6 +1620,14 @@ body {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.equipment-managers dt {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  white-space: nowrap;
+  font-size: clamp(0.7rem, 3.2vw, 0.875rem);
+}
+
 .equipment-managers dd {
   display: flex;
   flex-wrap: wrap;

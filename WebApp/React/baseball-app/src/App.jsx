@@ -38,6 +38,46 @@ const categories = [
   { value: 'その他', label: 'その他' },
 ]
 
+const MANAGEMENT_TAB_KEY = 'baseball-club-management-tab'
+const PROFILE_CACHE_KEY = 'baseball-club-profile-cache'
+
+function getSavedManagementTab() {
+  return window.sessionStorage.getItem(MANAGEMENT_TAB_KEY) === 'expense'
+    ? 'expense'
+    : 'income'
+}
+
+function getCachedProfileState() {
+  const cachedState = window.sessionStorage.getItem(PROFILE_CACHE_KEY)
+  if (!cachedState) return null
+
+  try {
+    const parsedState = JSON.parse(cachedState)
+    if (
+      typeof parsedState.userId !== 'string' ||
+      !Array.isArray(parsedState.profiles)
+    ) {
+      return null
+    }
+
+    return parsedState
+  } catch (error) {
+    console.error('保存したプロフィール情報を読み込めませんでした。', error)
+    return null
+  }
+}
+
+function saveCachedProfileState(userId, profile, profiles) {
+  try {
+    window.sessionStorage.setItem(
+      PROFILE_CACHE_KEY,
+      JSON.stringify({ userId, profile, profiles })
+    )
+  } catch (error) {
+    console.error('プロフィール情報を一時保存できませんでした。', error)
+  }
+}
+
 function getToday() {
   const today = new Date()
   const year = today.getFullYear()
@@ -51,19 +91,25 @@ function formatDate(date) {
 }
 
 function App({ darkMode, onDarkModeChange }) {
+  const [cachedProfileState] = useState(getCachedProfileState)
   const [user, setUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
-  const [profile, setProfile] = useState(null)
-  const [profiles, setProfiles] = useState([])
-  const [profileUserId, setProfileUserId] = useState(null)
-  const [profileLoading, setProfileLoading] = useState(true)
+  const [profile, setProfile] = useState(cachedProfileState?.profile ?? null)
+  const [profiles, setProfiles] = useState(cachedProfileState?.profiles ?? [])
+  const [profileUserId, setProfileUserId] = useState(
+    cachedProfileState?.userId ?? null
+  )
+  const [profileLoading, setProfileLoading] = useState(!cachedProfileState)
   const [profileLoadError, setProfileLoadError] = useState('')
   const [profileError, setProfileError] = useState('')
   const [profileLoadAttempt, setProfileLoadAttempt] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [nickname, setNickname] = useState('')
   const [isSavingNickname, setIsSavingNickname] = useState(false)
   const [isSummaryCompact, setIsSummaryCompact] = useState(false)
-  const [activeManagementTab, setActiveManagementTab] = useState('income')
+  const [activeManagementTab, setActiveManagementTab] =
+    useState(getSavedManagementTab)
   const [isAccountInfoVisible, setIsAccountInfoVisible] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
   const successMessageTimer = useRef(null)
@@ -80,6 +126,10 @@ function App({ darkMode, onDarkModeChange }) {
     return () => window.removeEventListener('scroll', updateSummarySize)
   }, [])
 
+  useEffect(() => {
+    window.sessionStorage.setItem(MANAGEMENT_TAB_KEY, activeManagementTab)
+  }, [activeManagementTab])
+
   useEffect(
     () => () => {
       window.clearTimeout(successMessageTimer.current)
@@ -93,7 +143,15 @@ function App({ darkMode, onDarkModeChange }) {
     let cancelled = false
 
     async function loadProfiles() {
-      setProfileLoading(true)
+      const cachedState = getCachedProfileState()
+      if (cachedState?.userId === user.id) {
+        setProfile(cachedState.profile)
+        setProfiles(cachedState.profiles)
+        setProfileUserId(user.id)
+        setProfileLoading(false)
+      } else {
+        setProfileLoading(true)
+      }
       setProfileLoadError('')
 
       try {
@@ -112,9 +170,21 @@ function App({ darkMode, onDarkModeChange }) {
         if (!cancelled) {
           setProfile(profileResult.data)
           setProfiles(profilesResult.data)
+          setProfileUserId(user.id)
+          saveCachedProfileState(
+            user.id,
+            profileResult.data,
+            profilesResult.data
+          )
         }
       } catch (err) {
-        if (!cancelled) setProfileLoadError(err.message)
+        if (!cancelled) {
+          if (cachedState?.userId === user.id && cachedState.profile) {
+            setError(err.message)
+          } else {
+            setProfileLoadError(err.message)
+          }
+        }
       } finally {
         if (!cancelled) {
           setProfileUserId(user.id)
@@ -166,9 +236,6 @@ function App({ darkMode, onDarkModeChange }) {
   const [ownerFilter, setOwnerFilter] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
 
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [editTarget, setEditTarget] = useState(null)
   const [editForm, setEditForm] = useState({})
@@ -207,7 +274,6 @@ function App({ darkMode, onDarkModeChange }) {
       cancelled = true
     }
   }, [user])
-
 
   // 収入合計
   const totalIncome = incomeRecords.reduce(
@@ -482,10 +548,13 @@ function App({ darkMode, onDarkModeChange }) {
       if (saveError) throw saveError
 
       setProfile(savedProfile)
-      setProfiles((current) =>
-        [...current.filter((item) => item.id !== savedProfile.id), savedProfile]
-          .sort((left, right) => left.nickname.localeCompare(right.nickname))
-      )
+      const updatedProfiles = [
+        ...profiles.filter((item) => item.id !== savedProfile.id),
+        savedProfile,
+      ].sort((left, right) => left.nickname.localeCompare(right.nickname))
+      setProfiles(updatedProfiles)
+      saveCachedProfileState(user.id, savedProfile, updatedProfiles)
+      setProfileUserId(user.id)
     } catch (err) {
       setProfileError(err.message)
     } finally {
@@ -793,45 +862,46 @@ function App({ darkMode, onDarkModeChange }) {
                     </time>
                   </div>
                   <dl className="record-details">
-                    <div>
-                      <dt>1人あたり</dt>
-                      <dd>¥{Number(record.amount).toLocaleString()}</dd>
-                    </div>
-                    <div>
+                    <div className="income-people">
                       <dt>人数</dt>
                       <dd>{record.people}人</dd>
                     </div>
-                    <div className="record-total">
-                      <dt>合計金額</dt>
-                      <dd>
-                        ¥{(
-                          Number(record.amount) * Number(record.people)
-                        ).toLocaleString()}
-                      </dd>
+                    <div className="record-total-row">
+                      <div className="record-total">
+                        <dt>合計金額</dt>
+                        <dd>
+                          ¥{(
+                            Number(record.amount) * Number(record.people)
+                          ).toLocaleString()}
+                          <span className="unit-price">
+                            ¥{Number(record.amount).toLocaleString()}/人
+                          </span>
+                        </dd>
+                      </div>
+                      {isAdmin && (
+                        <div className="row-actions">
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            type="button"
+                            className="edit-button"
+                            onClick={() => openEditDialog('income', record)}
+                          >
+                            編集
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            type="button"
+                            className="delete-button"
+                            onClick={() => openDeleteDialog('income', record)}
+                          >
+                            削除
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </dl>
-                  {isAdmin && (
-                    <div className="row-actions">
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        type="button"
-                        className="edit-button"
-                        onClick={() => openEditDialog('income', record)}
-                      >
-                        編集
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        type="button"
-                        className="delete-button"
-                        onClick={() => openDeleteDialog('income', record)}
-                      >
-                        削除
-                      </Button>
-                    </div>
-                  )}
                   </CardContent>
                 </Card>
               ))}
@@ -997,7 +1067,7 @@ function App({ darkMode, onDarkModeChange }) {
                     </time>
                   </div>
                   <dl className="record-details">
-                    <div>
+                    <div className="expense-category">
                       <dt>カテゴリー</dt>
                       <dd>
                         {categories.find(
@@ -1005,49 +1075,54 @@ function App({ darkMode, onDarkModeChange }) {
                         )?.label || item.category}
                       </dd>
                     </div>
-                    <div>
+                    <div className="expense-unit-cost">
                       <dt>購入額</dt>
                       <dd>¥{Number(item.amount).toLocaleString()}</dd>
                     </div>
-                    <div>
+                    <div className="expense-quantity">
                       <dt>個数</dt>
                       <dd>{item.quantity}</dd>
                     </div>
-                    <div>
+                    <div className="expense-owner">
                       <dt>所持者</dt>
                       <dd>{item.owner}</dd>
                     </div>
-                    <div className="record-total">
-                      <dt>支出</dt>
-                      <dd>
-                        ¥{(
-                          Number(item.amount) * Number(item.quantity)
-                        ).toLocaleString()}
-                      </dd>
+                    <div className="record-total-row">
+                      <div className="record-total">
+                        <dt>支出</dt>
+                        <dd>
+                          ¥{(
+                            Number(item.amount) * Number(item.quantity)
+                          ).toLocaleString()}
+                          <span className="unit-price">
+                            {Number(item.amount).toLocaleString()}円/個
+                          </span>
+                        </dd>
+                      </div>
+                      {isAdmin && (
+                        <div className="row-actions">
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            type="button"
+                            className="edit-button"
+                            onClick={() => openEditDialog('inventory', item)}
+                          >
+                            編集
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            type="button"
+                            className="delete-button"
+                            onClick={() => openDeleteDialog('inventory', item)}
+                          >
+                            削除
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </dl>
-                  {isAdmin && (
-                    <div className="row-actions">
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        type="button"
-                        className="edit-button"
-                        onClick={() => openEditDialog('inventory', item)}
-                      >
-                        編集
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        type="button"
-                        className="delete-button"
-                        onClick={() => openDeleteDialog('inventory', item)}
-                      >
-                        削除
-                      </Button>
-                    </div>
-                  )}
                   </CardContent>
                 </Card>
               ))}

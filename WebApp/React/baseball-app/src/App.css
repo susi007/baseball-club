@@ -495,6 +495,18 @@ section h2 {
   font-size: 1.125rem;
 }
 
+.unit-price {
+  display: none;
+}
+
+.record-total-row {
+  display: contents;
+}
+
+.record-card .row-actions {
+  grid-column: 1 / -1;
+}
+
 .error {
   color: var(--dads-error);
   font-weight: 700;
@@ -1488,6 +1500,134 @@ body {
 :root[data-theme='dark'] .calculated-total strong,
 :root[data-theme='dark'] .auth-brand.MuiTypography-root {
   color: #90caf9;
+}
+
+.unit-price {
+  display: inline;
+  margin-left: clamp(0.5rem, 3vw, 3rem);
+  color: var(--dads-text);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.record-list {
+  gap: 0;
+}
+
+.record-card.MuiCard-root {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid #c7d2df;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.record-card.MuiCard-root:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+.record-card .MuiCardContent-root,
+.record-card .MuiCardContent-root:last-child {
+  padding: 0.75rem 0;
+}
+
+.record-card-heading {
+  align-items: baseline;
+  flex-direction: row;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.record-card-heading h4 {
+  font-size: 1rem;
+}
+
+.record-card-heading time {
+  font-size: 0.75rem;
+}
+
+.record-details {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.income-area .record-details {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.inventory-area .record-details {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.inventory-area .expense-unit-cost {
+  display: none;
+}
+
+.inventory-area .record-details > div:not(.record-total-row) dd {
+  font-size: 0.875rem;
+}
+
+.inventory-area .unit-price {
+  font-size: 0.75rem;
+}
+
+.record-total-row {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e4e9f0;
+}
+
+.record-total {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: baseline;
+  min-width: 0;
+  gap: 0.5rem;
+  padding: 0;
+  border: 0;
+}
+
+.record-total dd {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.record-card .row-actions {
+  display: flex;
+  flex-flow: row nowrap;
+  width: max-content;
+  max-width: 100%;
+  margin-left: auto;
+  margin-top: 0;
+}
+
+.record-card .row-actions > .MuiButton-root {
+  min-width: 0;
+  flex-shrink: 0;
+  padding-right: 0.5rem;
+  padding-left: 0.5rem;
+  white-space: nowrap;
+}
+
+:root[data-theme='dark'] .record-card.MuiCard-root {
+  background: transparent;
+  border-bottom-color: #627487;
+  box-shadow: none;
+}
+
+:root[data-theme='dark'] .record-total-row {
+  border-top-color: #354454;
+}
+
+:root[data-theme='dark'] .record-total {
+  border-top: 0;
 }
 
 :root[data-theme='dark'] .edit-button.MuiButton-root,

@@ -247,6 +247,7 @@ function App({ darkMode, onDarkModeChange }) {
 
   const [ownerFilter, setOwnerFilter] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
+  const [settlementStatusFilter, setSettlementStatusFilter] = useState('')
   const [equipmentManagerFilter, setEquipmentManagerFilter] = useState('')
   const [equipmentCategoryFilter, setEquipmentCategoryFilter] = useState('')
 
@@ -255,6 +256,7 @@ function App({ darkMode, onDarkModeChange }) {
   const [editForm, setEditForm] = useState({})
   const [editError, setEditError] = useState('')
   const [isSavingEdit, setIsSavingEdit] = useState(false)
+  const [isSavingExpenseStatus, setIsSavingExpenseStatus] = useState(false)
 
   // Supabaseから収入と備品を取得
   useEffect(() => {
@@ -316,10 +318,12 @@ function App({ darkMode, onDarkModeChange }) {
     0
   )
 
-  // 備品購入額の合計
+  // 清算済みの備品購入額のみ支出として計上
   const totalExpense = inventory.reduce(
     (total, item) =>
-      total + Number(item.amount) * Number(item.quantity),
+      item.settlement_status === 'settled'
+        ? total + Number(item.amount) * Number(item.quantity)
+        : total,
     0
   )
 
@@ -337,6 +341,49 @@ function App({ darkMode, onDarkModeChange }) {
       setSuccessMessage('')
       successMessageTimer.current = null
     }, 3000)
+  }
+
+  async function handleExpenseStatusChange(item) {
+    if (!isAdmin || isSavingExpenseStatus) return
+
+    const settlementStatus =
+      item.settlement_status === 'settled' ? 'reimbursement' : 'settled'
+    setError('')
+    setIsSavingExpenseStatus(true)
+
+    try {
+      const { data: updatedItem, error: updateError } = await supabase
+        .from('inventory')
+        .update({ settlement_status: settlementStatus })
+        .eq('id', item.id)
+        .select()
+        .maybeSingle()
+
+      if (updateError) throw updateError
+      if (!updatedItem) {
+        throw new Error(
+          'ステータスを更新できませんでした。管理者権限とSupabaseの更新ポリシーを確認してください。'
+        )
+      }
+
+      setInventory((current) =>
+        current.map((record) =>
+          record.id === item.id ? updatedItem : record
+        )
+      )
+      showSuccessMessage(
+        `「${item.name}」を${settlementStatus === 'settled' ? '清算済み' : '立替'}に変更しました。`
+      )
+    } catch (err) {
+      const errorMessage = err.message ?? String(err)
+      setError(
+        /column .* does not exist|could not find the .*settlement_status.*column|schema cache/i.test(errorMessage)
+          ? '支出ステータスのデータベース設定が未完了です。Supabase SQL Editorで supabase/migrations/20261112000000_add_inventory_settlement_status.sql を実行してください。'
+          : errorMessage
+      )
+    } finally {
+      setIsSavingExpenseStatus(false)
+    }
   }
 
   // 収入登録
@@ -560,8 +607,11 @@ function App({ darkMode, onDarkModeChange }) {
     const matchesOwner = !ownerFilter || item.owner === ownerFilter
     const matchesCategory =
       !categoryFilter || item.category === categoryFilter
+    const matchesSettlementStatus =
+      !settlementStatusFilter ||
+      (item.settlement_status ?? 'reimbursement') === settlementStatusFilter
 
-    return matchesOwner && matchesCategory
+    return matchesOwner && matchesCategory && matchesSettlementStatus
   }).sort(
     (left, right) =>
       right.date.localeCompare(left.date) || right.id - left.id
@@ -726,6 +776,51 @@ function App({ darkMode, onDarkModeChange }) {
   }
 
   function renderInventoryList(headingId, heading) {
+    function renderExpenseStatus(item) {
+      const isSettled = item.settlement_status === 'settled'
+      const statusLabel = isSettled ? '清算済み' : '立替'
+      const nextStatusLabel = isSettled ? '立替' : '清算済み'
+      const mark = isSettled ? (
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" />
+          <path d="m8 12 2.5 2.5L16.5 9" />
+        </svg>
+      ) : (
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M8 8h8M8 11h8m-7 5 3-4 3 4m-3-4v7" />
+        </svg>
+      )
+
+      return isAdmin ? (
+        <Tooltip
+          title={`ステータス: ${statusLabel}（クリックして${nextStatusLabel}に変更）`}
+        >
+          <span className="expense-status-control-wrap">
+            <IconButton
+              type="button"
+              className={`expense-status-mark ${isSettled ? 'is-settled' : 'is-reimbursement'}`}
+              aria-label={`${item.name}: ${statusLabel}。クリックして${nextStatusLabel}に変更`}
+              onClick={() => handleExpenseStatusChange(item)}
+              disabled={isSavingExpenseStatus}
+              size="small"
+            >
+              {mark}
+            </IconButton>
+          </span>
+        </Tooltip>
+      ) : (
+        <span
+          className={`expense-status-mark ${isSettled ? 'is-settled' : 'is-reimbursement'}`}
+          role="img"
+          aria-label={statusLabel}
+          title={statusLabel}
+        >
+          {mark}
+        </span>
+      )
+    }
+
     return (
       <section className="management-panel">
         <Typography component="h3" id={headingId} variant="h6">
@@ -762,6 +857,20 @@ function App({ darkMode, onDarkModeChange }) {
               ))}
             </select>
           </label>
+
+          <label>
+            ステータスで絞り込み
+            <select
+              value={settlementStatusFilter}
+              onChange={(event) =>
+                setSettlementStatusFilter(event.target.value)
+              }
+            >
+              <option value="">すべて</option>
+              <option value="reimbursement">立替</option>
+              <option value="settled">清算済み</option>
+            </select>
+          </label>
         </div>
 
         {loading ? (
@@ -774,7 +883,10 @@ function App({ darkMode, onDarkModeChange }) {
               <Card component="li" className="record-card" key={item.id}>
                 <CardContent>
                   <div className="record-card-heading">
-                    <h4>{item.name}</h4>
+                    <div className="record-name-status">
+                      <h4>{item.name}</h4>
+                      {renderExpenseStatus(item)}
+                    </div>
                     <time dateTime={formatDate(item.date)}>
                       {formatDate(item.date)}
                     </time>

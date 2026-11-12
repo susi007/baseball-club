@@ -38,8 +38,13 @@ const categories = [
   { value: 'その他', label: 'その他' },
 ]
 
+const BALL_CATEGORIES = ['練習球', '公認球']
 const MANAGEMENT_TAB_KEY = 'baseball-club-management-tab'
 const PROFILE_CACHE_KEY = 'baseball-club-profile-cache'
+
+function isBallCategory(category) {
+  return BALL_CATEGORIES.includes(category)
+}
 
 function getSavedManagementTab() {
   const savedTab = window.sessionStorage.getItem(MANAGEMENT_TAB_KEY)
@@ -230,6 +235,8 @@ function App({ darkMode, onDarkModeChange }) {
   const [historyError, setHistoryError] = useState('')
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
   const [disposalTarget, setDisposalTarget] = useState(null)
+  const [disposalManager, setDisposalManager] = useState('')
+  const [disposalQuantity, setDisposalQuantity] = useState('1')
   const [disposalError, setDisposalError] = useState('')
   const [isDisposingEquipment, setIsDisposingEquipment] = useState(false)
 
@@ -244,6 +251,11 @@ function App({ darkMode, onDarkModeChange }) {
   const [itemAmount, setItemAmount] = useState('')
   const [quantity, setQuantity] = useState('1')
   const [owner, setOwner] = useState('')
+  const [ballUnitCount, setBallUnitCount] = useState('1')
+  const [ballUnitCountError, setBallUnitCountError] = useState('')
+  const [isBallUnitCountDialogOpen, setIsBallUnitCountDialogOpen] =
+    useState(false)
+  const [isSavingInventory, setIsSavingInventory] = useState(false)
 
   const [ownerFilter, setOwnerFilter] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
@@ -280,7 +292,7 @@ function App({ darkMode, onDarkModeChange }) {
           supabase
             .from('equipment_items')
             .select(
-              'id, name, category, changed_on, disposed_on, equipment_assignments(manager, quantity)'
+              'id, name, category, changed_on, disposed_on, balls_per_unit, disposed_quantity, equipment_assignments(manager, quantity)'
             )
             .neq('category', 'グラウンド')
             .is('disposed_on', null)
@@ -424,6 +436,72 @@ function App({ darkMode, onDarkModeChange }) {
     event.preventDefault()
     setError('')
 
+    if (isBallCategory(category)) {
+      let existingEquipment = equipmentItems.find(
+        (item) => item.name === name.trim() && item.category === category
+      )
+      if (!existingEquipment && name.trim()) {
+        try {
+          const { data, error: equipmentLookupError } = await supabase
+            .from('equipment_items')
+            .select('id, name, category, balls_per_unit')
+            .eq('name', name.trim())
+            .maybeSingle()
+          if (equipmentLookupError) throw equipmentLookupError
+          if (data?.category === category) existingEquipment = data
+        } catch (err) {
+          setError(err.message)
+          return
+        }
+      }
+
+      setBallUnitCount(
+        String(existingEquipment?.balls_per_unit ?? 1)
+      )
+      setBallUnitCountError('')
+      setIsBallUnitCountDialogOpen(true)
+      return
+    }
+
+    await saveInventoryRecord(1)
+  }
+
+  async function handleBallUnitCountSubmit(event) {
+    event.preventDefault()
+
+    const parsedBallUnitCount = Number(ballUnitCount)
+    if (
+      !Number.isInteger(parsedBallUnitCount) ||
+      parsedBallUnitCount < 1 ||
+      parsedBallUnitCount > 2147483647
+    ) {
+      setBallUnitCountError(
+        '1単位あたりのボール数は1以上の整数で入力してください。'
+      )
+      return
+    }
+
+    const existingEquipment = equipmentItems.find(
+      (item) => item.name === name.trim() && item.category === category
+    )
+    if (
+      existingEquipment &&
+      Number(existingEquipment.balls_per_unit) !== parsedBallUnitCount
+    ) {
+      setBallUnitCountError(
+        'この備品には登録済みの球数/単位があります。球数を変更する場合は、備品管理の「管理者・球数を変更」から先に更新してください。'
+      )
+      return
+    }
+
+    setBallUnitCountError('')
+    await saveInventoryRecord(parsedBallUnitCount)
+  }
+
+  async function saveInventoryRecord(ballsPerUnit) {
+    setError('')
+    setIsSavingInventory(true)
+
     const data = {
       date: itemDate,
       name: name.trim(),
@@ -431,6 +509,7 @@ function App({ darkMode, onDarkModeChange }) {
       amount: Number(itemAmount),
       quantity: Number(quantity),
       owner: owner.trim(),
+      balls_per_unit: ballsPerUnit,
     }
 
     try {
@@ -447,7 +526,7 @@ function App({ darkMode, onDarkModeChange }) {
         await supabase
           .from('equipment_items')
           .select(
-            'id, name, category, changed_on, disposed_on, equipment_assignments(manager, quantity)'
+            'id, name, category, changed_on, disposed_on, balls_per_unit, disposed_quantity, equipment_assignments(manager, quantity)'
           )
           .neq('category', 'グラウンド')
           .is('disposed_on', null)
@@ -467,9 +546,18 @@ function App({ darkMode, onDarkModeChange }) {
       setItemAmount('')
       setQuantity('1')
       setOwner('')
+      setBallUnitCount('1')
+      setBallUnitCountError('')
+      setIsBallUnitCountDialogOpen(false)
       if (!equipmentLoadError) showSuccessMessage('支出を登録しました。')
     } catch (err) {
-      setError(err.message)
+      if (isBallCategory(category)) {
+        setBallUnitCountError(err.message)
+      } else {
+        setError(err.message)
+      }
+    } finally {
+      setIsSavingInventory(false)
     }
   }
 
@@ -686,13 +774,6 @@ function App({ darkMode, onDarkModeChange }) {
       setEquipmentError('個数は1以上2,147,483,647以下の整数を入力してください。')
       return
     }
-    if (hasEquipmentQuantityMismatch) {
-      setEquipmentError(
-        `管理者ごとの個数合計（${equipmentAssignedQuantity}個）を購入済み個数（${equipmentPurchasedQuantity}個）に合わせてください。`
-      )
-      return
-    }
-
     setEquipmentError('')
     setIsSavingEquipment(true)
     try {
@@ -712,7 +793,7 @@ function App({ darkMode, onDarkModeChange }) {
       const { data, error: loadError } = await supabase
         .from('equipment_items')
         .select(
-          'id, name, category, changed_on, equipment_assignments(manager, quantity)'
+          'id, name, category, changed_on, disposed_on, balls_per_unit, disposed_quantity, equipment_assignments(manager, quantity)'
         )
         .neq('category', 'グラウンド')
         .is('disposed_on', null)
@@ -738,7 +819,7 @@ function App({ darkMode, onDarkModeChange }) {
       const { data, error: loadError } = await supabase
         .from('equipment_history')
         .select(
-          'id, changed_on, before_state, after_state, changed_by_nickname, change_type'
+          'id, changed_on, before_state, after_state, before_balls_per_unit, after_balls_per_unit, changed_by_nickname, change_type'
         )
         .eq('equipment_id', item.id)
         .order('created_at', { ascending: false })
@@ -757,17 +838,42 @@ function App({ darkMode, onDarkModeChange }) {
     setDisposalError('')
     setIsDisposingEquipment(true)
     try {
-      const { error: disposeError } = await supabase.rpc(
-        'dispose_equipment',
-        { p_equipment_id: disposalTarget.id }
-      )
+      const isBallEquipment = isBallCategory(disposalTarget.category)
+      const { error: disposeError } = isBallEquipment
+        ? await supabase.rpc('dispose_equipment_quantity', {
+            p_equipment_id: disposalTarget.id,
+            p_manager: disposalManager,
+            p_quantity: Number(disposalQuantity),
+          })
+        : await supabase.rpc('dispose_equipment', {
+            p_equipment_id: disposalTarget.id,
+          })
       if (disposeError) throw disposeError
 
-      setEquipmentItems((current) =>
-        current.filter((item) => item.id !== disposalTarget.id)
-      )
+      if (isBallEquipment) {
+        const { data, error: loadError } = await supabase
+          .from('equipment_items')
+          .select(
+            'id, name, category, changed_on, disposed_on, balls_per_unit, disposed_quantity, equipment_assignments(manager, quantity)'
+          )
+          .neq('category', 'グラウンド')
+          .is('disposed_on', null)
+          .order('changed_on', { ascending: false })
+          .order('name')
+        if (loadError) throw loadError
+        setEquipmentItems(data)
+      } else {
+        setEquipmentItems((current) =>
+          current.filter((item) => item.id !== disposalTarget.id)
+        )
+      }
+
       setDisposalTarget(null)
-      showSuccessMessage('備品を廃棄しました。')
+      showSuccessMessage(
+        isBallEquipment
+          ? `${disposalQuantity}球を${disposalManager}の割当から廃棄しました。`
+          : '備品を廃棄しました。'
+      )
     } catch (err) {
       setDisposalError(err.message)
     } finally {
@@ -958,18 +1064,16 @@ function App({ darkMode, onDarkModeChange }) {
   }
 
   function getEquipmentQuantities(item) {
-    const purchasedQuantity = inventory
-      .filter(
-        (purchase) =>
-          purchase.name === item.name && purchase.category !== 'グラウンド'
-      )
-      .reduce((total, purchase) => total + Number(purchase.quantity), 0)
+    const isBallEquipment = isBallCategory(item.category)
     const assignedQuantity = item.equipment_assignments.reduce(
       (total, assignment) => total + Number(assignment.quantity),
       0
     )
 
-    return { purchasedQuantity, assignedQuantity }
+    return {
+      isBallEquipment,
+      totalQuantity: assignedQuantity,
+    }
   }
 
   function renderEquipmentList() {
@@ -1027,7 +1131,10 @@ function App({ darkMode, onDarkModeChange }) {
             ) : (
           <ul className="record-list" aria-labelledby="equipment-list-heading">
             {filteredEquipmentItems.map((item) => {
-              const { purchasedQuantity, assignedQuantity } =
+              const {
+                isBallEquipment,
+                totalQuantity,
+              } =
                 getEquipmentQuantities(item)
 
               return (
@@ -1051,9 +1158,9 @@ function App({ darkMode, onDarkModeChange }) {
                     </div>
                     <div className="equipment-managers">
                       <dt>
-                        管理者・個数
+                        管理者・{isBallEquipment ? '球数' : '個数'}
                         <span className="equipment-count-legend">
-                          （割当数 / 購入済み数）
+                          （割当数 / 合計{isBallEquipment ? '球数' : '個数'}）
                         </span>
                       </dt>
                       <dd>
@@ -1069,20 +1176,21 @@ function App({ darkMode, onDarkModeChange }) {
                             >
                               <span>{assignment.manager}</span>
                               <span className="equipment-count-fraction">
-                                <strong>{assignment.quantity}個</strong>
+                                <strong>
+                                  {assignment.quantity}
+                                  {isBallEquipment ? '球' : '個'}
+                                </strong>
                                 <span aria-hidden="true">/</span>
-                                <span>{purchasedQuantity}個</span>
+                                <span>
+                                  {totalQuantity}
+                                  {isBallEquipment ? '球' : '個'}
+                                </span>
                               </span>
                             </span>
                           ))}
                       </dd>
                     </div>
                   </dl>
-                  {purchasedQuantity !== assignedQuantity && (
-                    <p className="equipment-quantity-error" role="alert">
-                      個数が一致していません。購入済み個数に合わせてください。
-                    </p>
-                  )}
                   <div className="row-actions equipment-actions">
                     <Button
                       variant="outlined"
@@ -1091,7 +1199,7 @@ function App({ darkMode, onDarkModeChange }) {
                       className="edit-button"
                       onClick={() => openEquipmentEditor(item)}
                     >
-                      管理者・個数を変更
+                      管理者・{isBallEquipment ? '球数' : '個数'}を変更
                     </Button>
                     <Button
                       variant="outlined"
@@ -1110,6 +1218,10 @@ function App({ darkMode, onDarkModeChange }) {
                       onClick={() => {
                         setDisposalError('')
                         setDisposalTarget(item)
+                        setDisposalManager(
+                          item.equipment_assignments[0]?.manager ?? ''
+                        )
+                        setDisposalQuantity('1')
                       }}
                     >
                       廃棄
@@ -1127,21 +1239,14 @@ function App({ darkMode, onDarkModeChange }) {
     )
   }
 
-  const equipmentPurchasedQuantity = equipmentTarget
-    ? inventory
-        .filter(
-          (item) =>
-            item.name === equipmentTarget.name &&
-            item.category !== 'グラウンド'
-        )
-        .reduce((total, item) => total + Number(item.quantity), 0)
-    : 0
   const equipmentAssignedQuantity = equipmentAssignments.reduce(
     (total, assignment) => total + Number(assignment.quantity || 0),
     0
   )
-  const hasEquipmentQuantityMismatch =
-    equipmentAssignedQuantity !== equipmentPurchasedQuantity
+  const disposalManagerQuantity =
+    disposalTarget?.equipment_assignments.find(
+      (assignment) => assignment.manager === disposalManager
+    )?.quantity ?? 0
 
   if (authLoading) {
     return (
@@ -1667,6 +1772,71 @@ function App({ darkMode, onDarkModeChange }) {
           {renderEquipmentList()}
         </Paper>
 
+        {isBallUnitCountDialogOpen && (
+          <div className="modal-overlay">
+            <form
+              className="delete-modal equipment-modal"
+              onSubmit={handleBallUnitCountSubmit}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="ball-unit-count-title"
+            >
+              <h2 id="ball-unit-count-title">1単位あたりのボール数</h2>
+              <p>
+                「{name || '備品'}」1単位に入っているボールの個数を入力してください。
+              </p>
+              {ballUnitCountError && (
+                <Alert severity="error" role="alert" sx={{ mt: 2 }}>
+                  {ballUnitCountError}
+                </Alert>
+              )}
+              <label>
+                1単位あたりの球数
+                <input
+                  type="number"
+                  min="1"
+                  max="2147483647"
+                  step="1"
+                  value={ballUnitCount}
+                  onChange={(event) => {
+                    setBallUnitCount(event.target.value)
+                    setBallUnitCountError('')
+                  }}
+                  required
+                  autoFocus
+                />
+              </label>
+              <p className="equipment-quantity-summary">
+                {Number(ballUnitCount) || 0}球 ×{' '}
+                {(Number(quantity) || 0).toLocaleString()}個 ={' '}
+                {(
+                  (Number(ballUnitCount) || 0) * (Number(quantity) || 0)
+                ).toLocaleString()}
+                球
+              </p>
+              <div className="modal-actions">
+                <Button
+                  variant="outlined"
+                  type="button"
+                  className="cancel-button"
+                  onClick={() => setIsBallUnitCountDialogOpen(false)}
+                  disabled={isSavingInventory}
+                >
+                  キャンセル
+                </Button>
+                <Button
+                  variant="contained"
+                  type="submit"
+                  className="save-button"
+                  disabled={isSavingInventory}
+                >
+                  {isSavingInventory ? '登録中...' : '球数を確定して登録'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        )}
+
         {equipmentTarget && (
           <div className="modal-overlay">
             <form
@@ -1680,7 +1850,11 @@ function App({ darkMode, onDarkModeChange }) {
                 {equipmentTarget.name}の管理情報
               </h2>
               <p className="equipment-quantity-summary">
-                管理者割当: {equipmentAssignedQuantity}個 / 購入済み: {equipmentPurchasedQuantity}個
+                {isBallCategory(equipmentTarget.category)
+                  ? '実球数合計'
+                  : '管理者割当合計'}
+                : {equipmentAssignedQuantity}
+                {isBallCategory(equipmentTarget.category) ? '球' : '個'}
               </p>
               {equipmentError && (
                 <Alert severity="error" role="alert">
@@ -1741,10 +1915,11 @@ function App({ darkMode, onDarkModeChange }) {
                       </select>
                     </label>
                     <label>
-                      個数
+                      {isBallCategory(equipmentTarget.category) ? '球数' : '個数'}
                       <input
                         type="number"
                         min="1"
+                        max="2147483647"
                         step="1"
                         value={assignment.quantity}
                         onChange={(event) =>
@@ -1788,11 +1963,6 @@ function App({ darkMode, onDarkModeChange }) {
               >
                 管理者を追加
               </Button>
-              {hasEquipmentQuantityMismatch && (
-              <Alert className="equipment-save-error" severity="error" role="alert">
-                管理者ごとの個数合計を購入済み個数に合わせてください。
-              </Alert>
-              )}
               <div className="modal-actions">
                 <Button
                   variant="outlined"
@@ -1807,7 +1977,7 @@ function App({ darkMode, onDarkModeChange }) {
                   variant="contained"
                   type="submit"
                   className="save-button"
-                  disabled={isSavingEquipment || hasEquipmentQuantityMismatch}
+                  disabled={isSavingEquipment}
                 >
                   {isSavingEquipment ? '保存中...' : '変更を保存'}
                 </Button>
@@ -1819,15 +1989,59 @@ function App({ darkMode, onDarkModeChange }) {
         {disposalTarget && (
           <div className="modal-overlay">
             <section
-              className="delete-modal"
+              className="delete-modal equipment-disposal-modal"
               role="dialog"
               aria-modal="true"
               aria-labelledby="equipment-disposal-title"
             >
               <h2 id="equipment-disposal-title">備品の廃棄確認</h2>
-              <p>
-                「{disposalTarget.name}」を廃棄しますか？廃棄後は備品一覧から非表示になりますが、支出一覧と支出合計には購入記録が残ります。変更履歴も保持されます。
-              </p>
+              {isBallCategory(disposalTarget.category) ? (
+                <>
+                  <p>
+                    「{disposalTarget.name}」の廃棄する球数を選択してください。選択した管理者の割当から差し引きます。
+                  </p>
+                  <label>
+                    管理者
+                    <select
+                      value={disposalManager}
+                      onChange={(event) => {
+                        setDisposalManager(event.target.value)
+                        setDisposalQuantity('1')
+                      }}
+                      required
+                    >
+                      {disposalTarget.equipment_assignments.map(
+                        (assignment) => (
+                          <option
+                            key={assignment.manager}
+                            value={assignment.manager}
+                          >
+                            {assignment.manager}（{assignment.quantity}球）
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </label>
+                  <label>
+                    廃棄する球数（最大{disposalManagerQuantity}球）
+                    <input
+                      type="number"
+                      min="1"
+                      max={disposalManagerQuantity}
+                      step="1"
+                      value={disposalQuantity}
+                      onChange={(event) =>
+                        setDisposalQuantity(event.target.value)
+                      }
+                      required
+                    />
+                  </label>
+                </>
+              ) : (
+                <p>
+                  「{disposalTarget.name}」を廃棄しますか？廃棄後は備品一覧から非表示になりますが、支出一覧と支出合計には購入記録が残ります。変更履歴も保持されます。
+                </p>
+              )}
               {disposalError && (
                 <Alert severity="error" role="alert" sx={{ mt: 2 }}>
                   {disposalError}
@@ -1849,7 +2063,13 @@ function App({ darkMode, onDarkModeChange }) {
                   type="button"
                   className="confirm-delete-button"
                   onClick={confirmEquipmentDisposal}
-                  disabled={isDisposingEquipment}
+                  disabled={
+                    isDisposingEquipment ||
+                    (isBallCategory(disposalTarget.category) &&
+                      (!Number.isInteger(Number(disposalQuantity)) ||
+                        Number(disposalQuantity) < 1 ||
+                        Number(disposalQuantity) > disposalManagerQuantity))
+                  }
                 >
                   {isDisposingEquipment ? '廃棄中...' : '廃棄する'}
                 </Button>
@@ -1892,74 +2112,172 @@ function App({ darkMode, onDarkModeChange }) {
                 <Typography>変更履歴はありません。</Typography>
               ) : (
                 <ol className="equipment-history-list">
-                  {equipmentHistory.map((entry) => (
-                    <li
-                      className={
-                        entry.change_type === 'disposal'
-                          ? 'is-disposal'
-                          : ''
-                      }
-                      key={entry.id}
-                    >
-                      <div className="equipment-history-meta">
-                        <time dateTime={formatDate(entry.changed_on)}>
-                          {formatDate(entry.changed_on)}
-                        </time>
-                        <span>{entry.changed_by_nickname}</span>
-                      </div>
-                      {entry.change_type === 'disposal' ? (
-                        <div className="equipment-history-disposal">
-                          <span className="equipment-history-disposal-icon" aria-hidden="true">
-                            ×
-                          </span>
-                          備品を廃棄しました。
+                  {equipmentHistory.map((entry) => {
+                    const isPartialDisposal =
+                      entry.change_type === 'partial_disposal'
+                    const removedAllocation = isPartialDisposal
+                      ? entry.before_state.find((before) => {
+                          const after = entry.after_state.find(
+                            (allocation) =>
+                              allocation.manager === before.manager
+                          )
+                          return before.quantity > (after?.quantity ?? 0)
+                        })
+                      : null
+                    const removedQuantity = removedAllocation
+                      ? removedAllocation.quantity -
+                        (entry.after_state.find(
+                          (allocation) =>
+                            allocation.manager === removedAllocation.manager
+                        )?.quantity ?? 0)
+                      : 0
+                    const afterAllocations = [
+                      ...entry.after_state,
+                      ...entry.before_state
+                        .filter(
+                          (before) =>
+                            !entry.after_state.some(
+                              (after) => after.manager === before.manager
+                            )
+                        )
+                        .map((before) => ({ ...before, quantity: 0 })),
+                    ]
+                    const allocationDeltas =
+                      entry.change_type === 'assignment_change'
+                        ? afterAllocations
+                            .map((allocation) => ({
+                              manager: allocation.manager,
+                              quantityChange:
+                                allocation.quantity -
+                                (entry.before_state.find(
+                                  (before) =>
+                                    before.manager === allocation.manager
+                                )?.quantity ?? 0),
+                            }))
+                            .filter(
+                              (allocation) => allocation.quantityChange !== 0
+                            )
+                        : []
+
+                    return (
+                      <li
+                        className={
+                          entry.change_type !== 'assignment_change'
+                            ? 'is-disposal'
+                            : ''
+                        }
+                        key={entry.id}
+                      >
+                        <div className="equipment-history-meta">
+                          <time dateTime={formatDate(entry.changed_on)}>
+                            {formatDate(entry.changed_on)}
+                          </time>
+                          <span>{entry.changed_by_nickname}</span>
                         </div>
-                      ) : (
-                        <div className="equipment-history-change">
-                          <div className="equipment-history-state">
-                            <span className="equipment-history-state-label">
-                              変更前
-                            </span>
-                            {entry.before_state.length === 0
-                              ? <span className="equipment-history-empty">初期状態</span>
-                              : entry.before_state
-                                  .map((allocation) => (
-                                    <span
-                                      className="equipment-history-allocation"
-                                      key={allocation.manager}
-                                    >
-                                      <span>{allocation.manager}</span>
-                                      <strong>{allocation.quantity}個</strong>
-                                    </span>
-                                  ))}
-                          </div>
-                          <span
-                            className="equipment-history-arrow"
-                            aria-label="変更後"
+                        {allocationDeltas.length > 0 && (
+                          <div
+                            className="equipment-history-deltas"
+                            aria-label="管理者ごとの数量変更"
                           >
-                            →
-                          </span>
-                          <div className="equipment-history-state is-after">
-                            <span className="equipment-history-state-label">
-                              変更後
-                            </span>
-                            {entry.after_state.length === 0
-                              ? <span className="equipment-history-empty">管理者なし</span>
-                              : entry.after_state
-                                  .map((allocation) => (
+                            {allocationDeltas.map(
+                              ({ manager, quantityChange }) => (
+                                <span
+                                  className={`equipment-history-delta ${quantityChange > 0 ? 'is-increase' : 'is-decrease'}`}
+                                  key={manager}
+                                >
+                                  {manager}：{quantityChange > 0 ? '増加 +' : '減少 '}
+                                  {quantityChange}
+                                  {isBallCategory(historyTarget.category)
+                                    ? '球'
+                                    : '個'}
+                                </span>
+                              )
+                            )}
+                          </div>
+                        )}
+                        {entry.change_type === 'disposal' ||
+                        isPartialDisposal ? (
+                          <div className="equipment-history-disposal">
+                            {isPartialDisposal
+                              ? `${removedAllocation?.manager}から${removedQuantity}球を廃棄しました。`
+                              : '備品を廃棄しました。'}
+                          </div>
+                        ) : (
+                          <div className="equipment-history-change">
+                            <div className="equipment-history-state">
+                              <span className="equipment-history-state-label">
+                                {entry.before_state.length === 0
+                                  ? '初期状態'
+                                  : '変更前'}
+                              </span>
+                              {entry.before_state.length === 0
+                                ? null
+                                : entry.before_state.map((allocation) => (
                                     <span
                                       className="equipment-history-allocation"
                                       key={allocation.manager}
                                     >
                                       <span>{allocation.manager}</span>
-                                      <strong>{allocation.quantity}個</strong>
+                                      <strong>
+                                        {allocation.quantity}
+                                        {isBallCategory(historyTarget.category)
+                                          ? '球'
+                                          : '個'}
+                                      </strong>
                                     </span>
                                   ))}
+                              {entry.before_state.length > 0 &&
+                                isBallCategory(historyTarget.category) && (
+                                  <span className="equipment-history-empty">
+                                    1単位あたり{entry.before_balls_per_unit}球
+                                  </span>
+                                )}
+                            </div>
+                            <span
+                              className="equipment-history-arrow"
+                              aria-label="変更後"
+                            >
+                              →
+                            </span>
+                            <div className="equipment-history-state is-after">
+                              <span className="equipment-history-state-label">
+                                変更後
+                              </span>
+                              {isBallCategory(historyTarget.category) && (
+                                <span className="equipment-history-empty">
+                                  1単位あたり{entry.after_balls_per_unit}球
+                                </span>
+                              )}
+                              {afterAllocations.length === 0
+                                ? (
+                                  <span className="equipment-history-empty">
+                                    管理者なし
+                                  </span>
+                                )
+                                : afterAllocations.map((allocation) => {
+                                    return (
+                                      <span
+                                        className="equipment-history-allocation"
+                                        key={allocation.manager}
+                                      >
+                                        <span>{allocation.manager}</span>
+                                        <span className="equipment-history-allocation-values">
+                                          <strong>
+                                            {allocation.quantity}
+                                            {isBallCategory(historyTarget.category)
+                                              ? '球'
+                                              : '個'}
+                                            </strong>
+                                        </span>
+                                      </span>
+                                    )
+                                  })}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </li>
-                  ))}
+                        )}
+                      </li>
+                    )
+                  })}
                 </ol>
               )}
             </section>

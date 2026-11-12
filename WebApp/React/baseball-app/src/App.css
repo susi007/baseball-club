@@ -1704,6 +1704,33 @@ body {
   margin-bottom: 1rem;
 }
 
+.equipment-disposal-modal > label {
+  display: block;
+  margin-top: 1rem;
+  font-weight: 700;
+}
+
+.equipment-disposal-modal > label input,
+.equipment-disposal-modal > label select {
+  display: block;
+  width: 100%;
+  min-height: 3rem;
+  margin-top: 0.5rem;
+  padding: 0.65rem 1rem;
+  color: var(--dads-text);
+  background: #fff;
+  border: 1px solid var(--dads-muted);
+  border-radius: 0.5rem;
+  font: inherit;
+}
+
+.equipment-disposal-modal > label input:focus,
+.equipment-disposal-modal > label select:focus {
+  outline: 4px solid #000;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px var(--dads-focus);
+}
+
 .equipment-modal > label input,
 .equipment-assignment-row input,
 .equipment-assignment-row select {
@@ -1807,7 +1834,7 @@ body {
 }
 
 .equipment-history-list li.is-disposal::before {
-  background: #b45309;
+  background: #d32f2f;
 }
 
 .equipment-history-meta {
@@ -1830,6 +1857,13 @@ body {
   border-radius: 999px;
   background: #f1f5f9;
   font-weight: 600;
+}
+
+.equipment-history-deltas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: -0.25rem 0 0.75rem;
 }
 
 .equipment-history-change {
@@ -1873,6 +1907,32 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.equipment-history-allocation-values {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.35rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.equipment-history-delta {
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.equipment-history-delta.is-increase {
+  color: #1b5e20;
+  background: #e8f5e9;
+}
+
+.equipment-history-delta.is-decrease {
+  color: #b71c1c;
+  background: #ffebee;
+}
+
 .equipment-history-empty {
   color: var(--dads-muted);
   font-size: 0.875rem;
@@ -1886,22 +1946,12 @@ body {
 }
 
 .equipment-history-disposal {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  color: #92400e;
+  padding: 0.65rem 0.75rem;
+  border-left: 4px solid #d32f2f;
+  border-radius: 4px;
+  color: #b71c1c;
+  background: #ffebee;
   font-weight: 700;
-}
-
-.equipment-history-disposal-icon {
-  display: inline-grid;
-  width: 1.5rem;
-  height: 1.5rem;
-  place-items: center;
-  border-radius: 50%;
-  background: #fef3c7;
-  font-size: 1.1rem;
-  line-height: 1;
 }
 
 :root[data-theme='dark'] .equipment-history-list {
@@ -1931,12 +1981,20 @@ body {
   background: #24352f;
 }
 
-:root[data-theme='dark'] .equipment-history-disposal {
-  color: #fbbf24;
+:root[data-theme='dark'] .equipment-history-delta.is-increase {
+  color: #a5d6a7;
+  background: #1b3a23;
 }
 
-:root[data-theme='dark'] .equipment-history-disposal-icon {
-  background: #493819;
+:root[data-theme='dark'] .equipment-history-delta.is-decrease {
+  color: #ef9a9a;
+  background: #3b2525;
+}
+
+:root[data-theme='dark'] .equipment-history-disposal {
+  border-left-color: #f28b82;
+  color: #f28b82;
+  background: #3b2525;
 }
 
 :root[data-theme='dark'] .equipment-history-meta span {
@@ -1955,6 +2013,10 @@ body {
   .equipment-history-allocation {
     font-size: 0.8rem;
   }
+
+  .equipment-history-delta {
+    font-size: 0.7rem;
+  }
 }
 
 :root[data-theme='dark'] .record-card.MuiCard-root {
@@ -1972,6 +2034,8 @@ body {
 }
 
 :root[data-theme='dark'] .equipment-modal > label input,
+:root[data-theme='dark'] .equipment-disposal-modal > label input,
+:root[data-theme='dark'] .equipment-disposal-modal > label select,
 :root[data-theme='dark'] .equipment-assignment-row input,
 :root[data-theme='dark'] .equipment-assignment-row select {
   color: #edf2f7;

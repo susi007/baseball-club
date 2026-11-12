@@ -1,0 +1,109 @@
+# デジタル庁デザインシステム コードスニペット（React版）
+
+[デジタル庁デザインシステム](https://design.digital.go.jp/dads/)をReact/Tailwind CSSで実装したサンプル集です。
+
+各コンポーネントの動作やスタイル、使用方法や実装上の注意点等は[コードスニペット（React版）Storybook](https://design.digital.go.jp/dads/react/)でもご確認いただけます。
+
+## 特長
+
+- デジタル庁デザインシステムに準拠
+- 最小限の依存関係
+- カスタマイズ可能
+- シンプルな実装
+
+## 技術スタック
+
+本コードスニペットは以下の技術をベースに実装しています。
+
+- React（v19）
+- Tailwind CSS（v3）
+- TypeScript
+
+### デザイントークンについて
+
+本コードスニペットは、デジタル庁デザインシステムのデザイントークンをベースにしたTailwind CSSのプラグインを使用しています。コードスニペット使用の際は、下記のパッケージをプロジェクトにインストールしてください。
+
+- [@digital-go-jp/tailwind-theme-plugin](https://www.npmjs.com/package/@digital-go-jp/tailwind-theme-plugin)
+
+### React v18 での利用について
+
+本コードスニペットは React v19 を前提に実装しています。React v18 のプロジェクトに取り込む場合は、以下の修正が必要です。
+
+- `ref` を受け取るコンポーネントは `forwardRef` で包む
+- 一部の hooks（`useModalDialog`、`useTab`、`useTabAria`）の戻り値の型 `RefObject<T | null>` を `RefObject<T>` に変更する
+
+詳しい手順は [React v18 で使用する場合](./docs/using-with-react-v18.md) を参照してください。
+
+## ローカルでコンポーネントを確認する
+
+各コンポーネントの動作やスタイルは、リポジトリをクローンしてローカルで Storybook を起動することでも確認できます。
+
+### 1. リポジトリのクローン
+
+任意の方法でリポジトリをクローンしてください。
+
+<https://github.com/digital-go-jp/design-system-example-components-react>
+
+### 2. 依存関係のインストール
+
+```bash
+npm install
+```
+
+### 3. Storybookを起動
+
+```bash
+npm run storybook
+```
+
+ブラウザで `http://localhost:6006` にアクセスすると、すべてのコンポーネントを確認できます。
+
+## ディレクトリ構成
+
+```
+src/
+├── components/         # 各コンポーネント
+│   ├── Accordion/
+│   ├── Blockquote/
+│   └── ...
+├── docs/               # ドキュメント
+├── tokens/             # デザイントークン
+└── index.ts            # 全コンポーネントのexport
+```
+
+各コンポーネントディレクトリには以下のファイルが含まれています：
+
+- `*.tsx` - コンポーネント本体
+- `*.stories.ts` - Storybookストーリー
+- `index.ts` - コンポーネントのexport
+
+## スクリプト
+
+```bash
+# Storybookを起動（開発用）
+npm run storybook
+
+# Storybookをビルド
+npm run storybook:build
+
+# テストを実行
+npm test
+
+# コードフォーマット
+npm run format
+```
+
+## ライセンス
+
+本コードスニペットはMITライセンスの下で公開されています。
+
+## 不具合報告・機能要望について
+
+本コードスニペットに関する不具合や機能要望は、Issueを作成して報告してください。Pull Requestは現時点では受け付けておりません。
+
+## 採用情報
+
+デジタル庁デザインシステムのチームメンバーを募集しています。行政のデジタル環境を支える基盤づくりに、あなたのスキルや経験を活かしてみませんか？　求人ページからご応募ください。
+
+- [【G_07】プロダクトデザイナー（デザインシステム）](https://herp.careers/v1/digitalsaiyo/aOOi7VfkWj7x)
+- [【G_08】デザインエンジニア（デザインシステム）](https://herp.careers/v1/digitalsaiyo/P5T1syjM8ulE)

@@ -1,0 +1,96 @@
+import type { Preview } from '@storybook/react-vite';
+import { DocsTemplate } from './DocsTemplate';
+import dadsTheme from './dadsTheme';
+import './globals.css';
+import './prose.css';
+
+const preview: Preview = {
+  parameters: {
+    actions: { argTypesRegex: '^on[A-Z].*' },
+
+    controls: {
+      matchers: {
+        color: /(background|color)$/i,
+        date: /Date$/,
+      },
+    },
+
+    options: {
+      storySort: {
+        order: [
+          'Documents',
+          ['はじめに', '導入方法', 'React版の開発方針'],
+          'Foundations',
+          ['カラー', 'タイポグラフィ', 'エレベーション'],
+          'Component',
+          [
+            'アコーディオン',
+            'インプットテキスト',
+            '引用ブロック',
+            'カード',
+            'カレンダー',
+            '箇条書きリスト',
+            '画像',
+            'カルーセル',
+            '緊急時バナー',
+            '検索ボックス',
+            'スイッチ',
+            '水平メニュー',
+            'ステップナビゲーション',
+            '説明リスト',
+            'セレクトボックス',
+            'タブ',
+            'チェックボックス',
+            'チップラベル',
+            'テーブル',
+            'ディスクロージャー',
+            'ディバイダー',
+            'テキストエリア',
+            'ドロワー',
+            'ノティフィケーションバナー',
+            'パンくずナビゲーション',
+            'ハンバーガーメニューボタン',
+            '日付ピッカー',
+            'ファイルアップロード／ドロップエリア',
+            'フォームコントロールラベル',
+            'プログレスインジケーター',
+            'ページナビゲーション',
+            'ボタン',
+            '見出し',
+            'メニューリスト',
+            'メニューリストボックス',
+            'モーダルダイアログ',
+            'ユーティリティリンク',
+            'ラジオボタン',
+            'ランゲージセレクター',
+            'リソースリスト',
+            'リンク',
+            '*',
+            'Parts',
+            'Deprecated',
+          ],
+        ],
+      },
+    },
+
+    docs: {
+      theme: dadsTheme,
+      codePanel: true,
+      page: DocsTemplate,
+      toc: {
+        headingSelector: 'h2, h3:not(#stories + div h3)',
+        ignoreSelector: '.docs-story :is(h1, h2, h3, h4, h5, h6)',
+        title: '目次',
+      },
+    },
+
+    a11y: {
+      // 'todo' - show a11y violations in the test UI only
+      // 'error' - fail CI on a11y violations
+      // 'off' - skip a11y checks entirely
+      test: 'todo'
+    }
+  },
+};
+
+export default preview;

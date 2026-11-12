@@ -28,7 +28,7 @@ admin権限をつけてみてください。（AI使えばたぶん誰でもで�
 　　
 Supabase Authでログインし、収入・備品データもSupabase Databaseに保存する。JavaScript版とは別のDBを使用する。
 
-① Supabase SQL Editorで `WebApp/React/baseball-app/supabase/migrations/20261105160000_create_club_tables.sql` を実行  
+① Supabase SQL Editorで `WebApp\React\baseball-app\supabase\setup.sql` を実行  
 ② `WebApp/React/baseball-app/.env.local` を作成し、SupabaseのURLとPublishable Keyを設定  
 ③ `WebApp/React/baseball-app` で `npm install`、`npm run dev` を実行  
 
@@ -39,7 +39,7 @@ const ADMIN_EMAILS = [
 ]
 ```
 
-supabaseの管理者追加のSQL等については、WebApp\React\baseball-app\supabase\migrations\20261105160000_create_club_tables.sqlをかくにんされたし。  
+supabaseの管理者追加のSQL等については、WebApp\React\baseball-app\supabase\migrations\admin_acount_operation.sqlをかくにんされたし。  
 
 既存のローカルPostgreSQLのデータは自動移行されない。必要な場合は別途エクスポート・インポートする。
 

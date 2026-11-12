@@ -839,40 +839,31 @@ function App({ darkMode, onDarkModeChange }) {
     setIsDisposingEquipment(true)
     try {
       const isBallEquipment = isBallCategory(disposalTarget.category)
-      const { error: disposeError } = isBallEquipment
-        ? await supabase.rpc('dispose_equipment_quantity', {
-            p_equipment_id: disposalTarget.id,
-            p_manager: disposalManager,
-            p_quantity: Number(disposalQuantity),
-          })
-        : await supabase.rpc('dispose_equipment', {
-            p_equipment_id: disposalTarget.id,
-          })
+      const { error: disposeError } = await supabase.rpc(
+        'dispose_equipment_quantity',
+        {
+          p_equipment_id: disposalTarget.id,
+          p_manager: disposalManager,
+          p_quantity: Number(disposalQuantity),
+        }
+      )
       if (disposeError) throw disposeError
 
-      if (isBallEquipment) {
-        const { data, error: loadError } = await supabase
-          .from('equipment_items')
-          .select(
-            'id, name, category, changed_on, disposed_on, balls_per_unit, disposed_quantity, equipment_assignments(manager, quantity)'
-          )
-          .neq('category', 'グラウンド')
-          .is('disposed_on', null)
-          .order('changed_on', { ascending: false })
-          .order('name')
-        if (loadError) throw loadError
-        setEquipmentItems(data)
-      } else {
-        setEquipmentItems((current) =>
-          current.filter((item) => item.id !== disposalTarget.id)
+      const { data, error: loadError } = await supabase
+        .from('equipment_items')
+        .select(
+          'id, name, category, changed_on, disposed_on, balls_per_unit, disposed_quantity, equipment_assignments(manager, quantity)'
         )
-      }
+        .neq('category', 'グラウンド')
+        .is('disposed_on', null)
+        .order('changed_on', { ascending: false })
+        .order('name')
+      if (loadError) throw loadError
+      setEquipmentItems(data)
 
       setDisposalTarget(null)
       showSuccessMessage(
-        isBallEquipment
-          ? `${disposalQuantity}球を${disposalManager}の割当から廃棄しました。`
-          : '備品を廃棄しました。'
+        `${disposalManager}の割当から${disposalQuantity}${isBallEquipment ? '球' : '個'}を廃棄しました。`
       )
     } catch (err) {
       setDisposalError(err.message)
@@ -1995,53 +1986,44 @@ function App({ darkMode, onDarkModeChange }) {
               aria-labelledby="equipment-disposal-title"
             >
               <h2 id="equipment-disposal-title">備品の廃棄確認</h2>
-              {isBallCategory(disposalTarget.category) ? (
-                <>
-                  <p>
-                    「{disposalTarget.name}」の廃棄する球数を選択してください。選択した管理者の割当から差し引きます。
-                  </p>
-                  <label>
-                    管理者
-                    <select
-                      value={disposalManager}
-                      onChange={(event) => {
-                        setDisposalManager(event.target.value)
-                        setDisposalQuantity('1')
-                      }}
-                      required
-                    >
-                      {disposalTarget.equipment_assignments.map(
-                        (assignment) => (
-                          <option
-                            key={assignment.manager}
-                            value={assignment.manager}
-                          >
-                            {assignment.manager}（{assignment.quantity}球）
-                          </option>
-                        )
-                      )}
-                    </select>
-                  </label>
-                  <label>
-                    廃棄する球数（最大{disposalManagerQuantity}球）
-                    <input
-                      type="number"
-                      min="1"
-                      max={disposalManagerQuantity}
-                      step="1"
-                      value={disposalQuantity}
-                      onChange={(event) =>
-                        setDisposalQuantity(event.target.value)
-                      }
-                      required
-                    />
-                  </label>
-                </>
-              ) : (
-                <p>
-                  「{disposalTarget.name}」を廃棄しますか？廃棄後は備品一覧から非表示になりますが、支出一覧と支出合計には購入記録が残ります。変更履歴も保持されます。
-                </p>
-              )}
+              <p>
+                「{disposalTarget.name}」の廃棄数と管理者を選択してください。選択した管理者の割当から差し引きます。全数を廃棄すると備品一覧から非表示になり、変更履歴も削除されます。
+              </p>
+              <label>
+                管理者
+                <select
+                  value={disposalManager}
+                  onChange={(event) => {
+                    setDisposalManager(event.target.value)
+                    setDisposalQuantity('1')
+                  }}
+                  required
+                >
+                  {disposalTarget.equipment_assignments.map((assignment) => (
+                    <option key={assignment.manager} value={assignment.manager}>
+                      {assignment.manager}（{assignment.quantity}
+                      {isBallCategory(disposalTarget.category) ? '球' : '個'}）
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                廃棄する
+                {isBallCategory(disposalTarget.category) ? '球' : '個'}
+                （最大{disposalManagerQuantity}
+                {isBallCategory(disposalTarget.category) ? '球' : '個'}）
+                <input
+                  type="number"
+                  min="1"
+                  max={disposalManagerQuantity}
+                  step="1"
+                  value={disposalQuantity}
+                  onChange={(event) =>
+                    setDisposalQuantity(event.target.value)
+                  }
+                  required
+                />
+              </label>
               {disposalError && (
                 <Alert severity="error" role="alert" sx={{ mt: 2 }}>
                   {disposalError}
@@ -2065,10 +2047,9 @@ function App({ darkMode, onDarkModeChange }) {
                   onClick={confirmEquipmentDisposal}
                   disabled={
                     isDisposingEquipment ||
-                    (isBallCategory(disposalTarget.category) &&
-                      (!Number.isInteger(Number(disposalQuantity)) ||
-                        Number(disposalQuantity) < 1 ||
-                        Number(disposalQuantity) > disposalManagerQuantity))
+                    !Number.isInteger(Number(disposalQuantity)) ||
+                    Number(disposalQuantity) < 1 ||
+                    Number(disposalQuantity) > disposalManagerQuantity
                   }
                 >
                   {isDisposingEquipment ? '廃棄中...' : '廃棄する'}
@@ -2199,7 +2180,7 @@ function App({ darkMode, onDarkModeChange }) {
                         isPartialDisposal ? (
                           <div className="equipment-history-disposal">
                             {isPartialDisposal
-                              ? `${removedAllocation?.manager}から${removedQuantity}球を廃棄しました。`
+                              ? `${removedAllocation?.manager}から${removedQuantity}${isBallCategory(historyTarget.category) ? '球' : '個'}を廃棄しました。`
                               : '備品を廃棄しました。'}
                           </div>
                         ) : (

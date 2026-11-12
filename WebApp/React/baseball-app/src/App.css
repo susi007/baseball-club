@@ -10,6 +10,8 @@
   --dads-surface-light: #f8f8f8;
   --dads-focus: #ffeb00;
   --dads-error: #c62828;
+  --form-focus: #1976d2;
+  --form-focus-ring: rgb(25 118 210 / 20%);
 }
 
 body {
@@ -356,14 +358,6 @@ section h2 {
   border-radius: 0.5rem;
 }
 
-.app-form input:focus,
-.app-form select:focus,
-.filter-area select:focus {
-  outline: 4px solid #000;
-  outline-offset: 2px;
-  box-shadow: 0 0 0 6px var(--dads-focus);
-}
-
 .calculated-total {
   display: flex;
   align-items: center;
@@ -626,12 +620,6 @@ section h2 {
   font: inherit;
 }
 
-.auth-form input:focus {
-  outline: 4px solid #000;
-  outline-offset: 2px;
-  box-shadow: 0 0 0 6px var(--dads-focus);
-}
-
 .auth-submit {
   width: 100%;
   min-height: 3rem;
@@ -847,13 +835,6 @@ section h2 {
   border: 1px solid var(--dads-muted);
   border-radius: 0.5rem;
   font: inherit;
-}
-
-.edit-form-fields input:focus,
-.edit-form-fields select:focus {
-  outline: 4px solid #000;
-  outline-offset: 2px;
-  box-shadow: 0 0 0 6px var(--dads-focus);
 }
 
 .delete-modal h2 {
@@ -1092,16 +1073,6 @@ body {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.app-form input:focus,
-.app-form select:focus,
-.filter-area select:focus,
-.edit-form-fields input:focus,
-.edit-form-fields select:focus {
-  outline: 0;
-  border: 2px solid #1976d2;
-  box-shadow: 0 0 0 3px rgb(25 118 210 / 16%);
-}
-
 .app-form .MuiButton-root {
   width: fit-content;
   min-height: 2.75rem;
@@ -1239,16 +1210,6 @@ body {
   box-shadow: none;
 }
 
-.auth-form input.MuiInputBase-input:focus {
-  outline: 0;
-  box-shadow: none;
-}
-
-.auth-form .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
-  border-color: #1976d2;
-  border-width: 2px;
-}
-
 .auth-submit.MuiButton-root {
   width: 100%;
   min-height: 3rem;
@@ -1384,6 +1345,8 @@ body {
   --dads-border-light: #354454;
   --dads-surface: #2a3948;
   --dads-surface-light: #1e2935;
+  --form-focus: #90caf9;
+  --form-focus-ring: rgb(144 202 249 / 24%);
 }
 
 :root[data-theme='dark'] body {
@@ -1481,14 +1444,7 @@ body {
   border-color: #627487;
 }
 
-:root[data-theme='dark'] .app-form input:focus,
-:root[data-theme='dark'] .app-form select:focus,
-:root[data-theme='dark'] .filter-area select:focus,
-:root[data-theme='dark'] .edit-form-fields input:focus,
-:root[data-theme='dark'] .edit-form-fields select:focus {
-  border-color: #90caf9;
-  box-shadow: 0 0 0 3px rgb(144 202 249 / 22%);
-}
+
 
 :root[data-theme='dark'] .calculated-total {
   color: #edf2f7;
@@ -1722,13 +1678,6 @@ body {
   border: 1px solid var(--dads-muted);
   border-radius: 0.5rem;
   font: inherit;
-}
-
-.equipment-disposal-modal > label input:focus,
-.equipment-disposal-modal > label select:focus {
-  outline: 4px solid #000;
-  outline-offset: 2px;
-  box-shadow: 0 0 0 6px var(--dads-focus);
 }
 
 .equipment-modal > label input,
@@ -2125,17 +2074,6 @@ body {
   color: #b0becb;
 }
 
-:root[data-theme='dark']
-  .auth-form
-  .MuiOutlinedInput-root.Mui-focused
-  .MuiOutlinedInput-notchedOutline {
-  border-color: #90caf9;
-}
-
-:root[data-theme='dark'] .auth-form .MuiInputLabel-root.Mui-focused {
-  color: #90caf9;
-}
-
 .edit-button.MuiButton-root,
 .delete-button.MuiButton-root {
   transition:
@@ -2275,4 +2213,28 @@ body {
 
 :root[data-theme='dark'] .expense-status-mark.MuiIconButton-root:focus-visible {
   outline-color: #90caf9;
+}
+
+:is(form, .equipment-disposal-modal, .filter-area)
+  :is(input, select, textarea):focus:not(.MuiInputBase-input) {
+  outline: none;
+  border-color: var(--form-focus);
+  box-shadow: 0 0 0 3px var(--form-focus-ring);
+}
+
+:is(form, .equipment-disposal-modal, .filter-area)
+  .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: 0 0 0 3px var(--form-focus-ring);
+}
+
+:is(form, .equipment-disposal-modal, .filter-area)
+  .MuiOutlinedInput-root.Mui-focused
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--form-focus);
+  border-width: 2px;
+}
+
+:is(form, .equipment-disposal-modal, .filter-area)
+  .MuiInputLabel-root.Mui-focused {
+  color: var(--form-focus);
 }

@@ -1534,9 +1534,9 @@ body {
   }
 
   .quantity-stepper .form-prefix-field {
-    flex-basis: 6.5rem;
-    max-width: 6.5rem;
-    min-width: 6rem;
+    flex-basis: 7rem;
+    max-width: 7rem;
+    min-width: 6.5rem;
   }
 
   .quantity-stepper .quantity-stepper-button {
@@ -1569,8 +1569,8 @@ body {
     row-gap: 0.5rem;
   }
 
-  .registration-form.app-form input,
-  .registration-form.app-form select {
+  .registration-form.app-form > input,
+  .registration-form.app-form > select {
     min-height: 3rem;
     padding: 0.45rem 0.75rem;
   }

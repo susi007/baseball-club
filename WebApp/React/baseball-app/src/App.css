@@ -1558,6 +1558,57 @@ body {
   }
 }
 
+@media (min-height: 851px) {
+  .registration-modal {
+    max-height: none;
+    overflow: visible;
+    padding: 1rem;
+  }
+
+  .registration-form {
+    row-gap: 0.5rem;
+  }
+
+  .registration-form.app-form input,
+  .registration-form.app-form select {
+    min-height: 3rem;
+    padding: 0.45rem 0.75rem;
+  }
+
+  .registration-form .form-prefix-field {
+    min-height: 3rem;
+  }
+
+  .registration-form .quantity-stepper {
+    margin-top: 0;
+  }
+
+  .registration-form .quantity-stepper .quantity-stepper-button {
+    min-height: 2.5rem;
+  }
+
+  .registration-form .registration-summary {
+    padding: 0.4rem;
+  }
+
+  .registration-form .registration-summary-title.MuiTypography-root {
+    margin-bottom: 0.25rem;
+  }
+
+  .registration-form .registration-summary-note.MuiTypography-root {
+    margin-top: 0.25rem;
+  }
+
+  .registration-form .modal-actions {
+    margin-top: 0;
+  }
+
+  .registration-form .save-button.MuiButton-root,
+  .registration-form .cancel-button.MuiButton-root {
+    min-height: 2.75rem;
+  }
+}
+
 :root[data-theme='dark'] {
   color-scheme: dark;
   --dads-text: #edf2f7;

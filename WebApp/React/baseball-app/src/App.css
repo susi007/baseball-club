@@ -1193,6 +1193,10 @@ body {
   grid-column: 1 / -1;
 }
 
+.registration-form > h2 {
+  margin-bottom: 0;
+}
+
 .registration-form .modal-actions {
   margin-top: 0.25rem;
 }
@@ -1282,8 +1286,9 @@ body {
 .registration-summary-note.MuiTypography-root {
   margin-top: 0.4rem;
   color: #5e6b7a;
-  font-size: 0.7rem;
-  line-height: 1.3;
+  font-size: 0.65rem;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .record-list {

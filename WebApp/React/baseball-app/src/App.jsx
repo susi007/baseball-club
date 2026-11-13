@@ -1945,7 +1945,7 @@ function App({ darkMode, onDarkModeChange }) {
               {renderRegistrationSummary(
                 0,
                 (Number(itemAmount) || 0) * (Number(quantity) || 0),
-                '支出・残高の変化は清算後の試算です（立替中は未計上）。'
+                '立替分は清算後に収支へ反映されます。'
               )}
               <div className="modal-actions">
                 <Button

@@ -1672,39 +1672,62 @@ function App({ darkMode, onDarkModeChange }) {
                 required
                 autoFocus
               />
-              <label>
-                名目
-                <input
-                  type="text"
-                  value={incomeName}
-                  onChange={(event) => setIncomeName(event.target.value)}
-                  placeholder="例：部費"
-                  required
-                />
-              </label>
-              <label>
-                1人あたりの金額（円）
-                <input
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={incomeAmount}
-                  onChange={(event) => setIncomeAmount(event.target.value)}
-                  placeholder="例：1000"
-                  required
-                />
-              </label>
-              <label>
-                人数
-                <input
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={people}
-                  onChange={(event) => setPeople(event.target.value)}
-                  required
-                />
-              </label>
+              <input
+                type="text"
+                aria-label="名目"
+                value={incomeName}
+                onChange={(event) => setIncomeName(event.target.value)}
+                placeholder="名目（例：部費）"
+                required
+              />
+              <input
+                type="number"
+                aria-label="1人あたりの金額（円）"
+                min="1"
+                step="1"
+                value={incomeAmount}
+                onChange={(event) => setIncomeAmount(event.target.value)}
+                placeholder="1人あたりの金額（円）"
+                required
+              />
+              <div className="quantity-stepper">
+                <button
+                  type="button"
+                  className="quantity-stepper-button"
+                  aria-label="人数を1減らす"
+                  onClick={() =>
+                    setPeople((current) => adjustQuantity(current, -1))
+                  }
+                  disabled={Number(people) <= 1}
+                >
+                  -
+                </button>
+                <div className="form-prefix-field">
+                  <span aria-hidden="true">人数：</span>
+                  <input
+                    type="number"
+                    aria-label="人数"
+                    min="1"
+                    max="2147483647"
+                    step="1"
+                    className="quantity-stepper-input"
+                    value={people}
+                    onChange={(event) => setPeople(event.target.value)}
+                    required
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="quantity-stepper-button"
+                  aria-label="人数を1増やす"
+                  onClick={() =>
+                    setPeople((current) => adjustQuantity(current, 1))
+                  }
+                  disabled={Number(people) >= 2147483647}
+                >
+                  +
+                </button>
+              </div>
               <output className="calculated-total">
                 <span>登録予定金額</span>
                 <strong>

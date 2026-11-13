@@ -1243,6 +1243,86 @@ function App({ darkMode, onDarkModeChange }) {
     )
   }
 
+  function renderRegistrationSummary(incomeChange, expenseChange, note = '') {
+    const balanceChange = incomeChange - expenseChange
+    const rows = [
+      {
+        label: '収入',
+        current: totalIncome,
+        change: incomeChange,
+        color: 'primary',
+      },
+      {
+        label: '支出',
+        current: totalExpense,
+        change: expenseChange,
+        color: 'secondary',
+      },
+      {
+        label: '残高',
+        current: balance,
+        change: balanceChange,
+        color: 'primary',
+      },
+    ]
+
+    return (
+      <section
+        className="registration-summary"
+        aria-labelledby="registration-summary-title"
+      >
+        <Typography
+          component="h3"
+          className="registration-summary-title"
+          id="registration-summary-title"
+        >
+          収支状況
+        </Typography>
+        <div className="summary-cards registration-summary-cards">
+          {rows.map((row) => {
+            const changeSign = row.change < 0 ? '−' : '+'
+            const absoluteChange = Math.abs(row.change)
+
+            return (
+              <Card
+                className={`card summary-${row.color} registration-summary-card`}
+                key={row.label}
+              >
+                <CardContent>
+                  <Typography
+                    component="h4"
+                    className="registration-summary-label"
+                    variant="subtitle2"
+                  >
+                    {row.label}
+                  </Typography>
+                  <Typography
+                    component="p"
+                    className={`registration-summary-change ${row.change < 0 ? 'is-negative' : 'is-positive'}`}
+                  >
+                    <span>{changeSign}</span>
+                    <span>{absoluteChange.toLocaleString()}</span>
+                  </Typography>
+                  <Typography
+                    component="p"
+                    className="registration-summary-value"
+                  >
+                    ¥{(row.current + row.change).toLocaleString()}
+                  </Typography>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+        {note && (
+          <Typography className="registration-summary-note">
+            {note}
+          </Typography>
+        )}
+      </section>
+    )
+  }
+
   const equipmentAssignedQuantity = equipmentAssignments.reduce(
     (total, assignment) => total + Number(assignment.quantity || 0),
     0
@@ -1728,14 +1808,10 @@ function App({ darkMode, onDarkModeChange }) {
                   +
                 </button>
               </div>
-              <output className="calculated-total">
-                <span>登録予定金額</span>
-                <strong>
-                  ¥{(
-                    (Number(incomeAmount) || 0) * (Number(people) || 0)
-                  ).toLocaleString()}
-                </strong>
-              </output>
+              {renderRegistrationSummary(
+                (Number(incomeAmount) || 0) * (Number(people) || 0),
+                0
+              )}
               <div className="modal-actions">
                 <Button
                   variant="outlined"
@@ -1866,14 +1942,11 @@ function App({ darkMode, onDarkModeChange }) {
                   </option>
                 ))}
               </select>
-              <output className="calculated-total">
-                <span>購入合計金額</span>
-                <strong>
-                  ¥{(
-                    (Number(itemAmount) || 0) * (Number(quantity) || 0)
-                  ).toLocaleString()}
-                </strong>
-              </output>
+              {renderRegistrationSummary(
+                0,
+                (Number(itemAmount) || 0) * (Number(quantity) || 0),
+                '支出・残高の変化は清算後の試算です（立替中は未計上）。'
+              )}
               <div className="modal-actions">
                 <Button
                   variant="outlined"

@@ -358,37 +358,6 @@ section h2 {
   border-radius: 0.5rem;
 }
 
-.calculated-total {
-  display: flex;
-  align-items: center;
-  flex-direction: row;
-  justify-content: center;
-  gap: 0.75rem;
-  flex-wrap: nowrap;
-  grid-column: 1 / -1;
-  margin: 0;
-  padding: 0.6rem 1rem;
-  color: var(--dads-text);
-  background: var(--dads-surface-light);
-  border: 1px solid var(--dads-border);
-  border-radius: 0.5rem;
-  text-align: center;
-}
-
-.calculated-total span {
-  font-size: 1rem;
-  font-weight: 700;
-}
-
-.calculated-total strong {
-  color: inherit;
-  font-size: clamp(1.25rem, 3vw, 1.5rem);
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-  line-height: 1.15;
-  white-space: nowrap;
-}
-
 .app-form button {
   width: fit-content;
   min-height: 3rem;
@@ -1219,7 +1188,7 @@ body {
 }
 
 .registration-form h2,
-.registration-form .calculated-total,
+.registration-form .registration-summary,
 .registration-form .modal-actions {
   grid-column: 1 / -1;
 }
@@ -1235,16 +1204,86 @@ body {
   font-size: 1rem;
 }
 
-.calculated-total {
+.record-total dd {
+  color: #1976d2;
+}
+
+.registration-summary {
+  margin: 0;
+  padding: 0.6rem;
   color: #1b2533;
   background: #f5f9ff;
-  border-color: #d7e5f5;
+  border: 1px solid #d7e5f5;
   border-radius: 10px;
 }
 
-.calculated-total strong,
-.record-total dd {
-  color: #1976d2;
+.registration-summary-title.MuiTypography-root {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.registration-summary-cards.summary-cards {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.registration-summary-cards .card.MuiCard-root {
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.registration-summary-cards .card .MuiCardContent-root,
+.registration-summary-cards .card .MuiCardContent-root:last-child {
+  padding: 0.4rem 0.25rem;
+}
+
+.registration-summary-label.MuiTypography-root {
+  margin: 0 0 0.1rem;
+  color: #5e6b7a;
+  font-size: clamp(0.65rem, 2.8vw, 0.8rem);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.registration-summary-change.MuiTypography-root,
+.registration-summary-value.MuiTypography-root {
+  margin: 0;
+  font-size: clamp(0.65rem, 2.8vw, 0.9rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.registration-summary-change.MuiTypography-root {
+  display: grid;
+  grid-template-columns: 1.1em minmax(0, 1fr);
+  gap: 0.1rem;
+}
+
+.registration-summary-change > span:first-child {
+  text-align: center;
+}
+
+.registration-summary-change > span:last-child,
+.registration-summary-value.MuiTypography-root {
+  text-align: right;
+}
+
+.registration-summary-cards .card .registration-summary-change.is-positive {
+  color: #2e7d32;
+}
+
+.registration-summary-cards .card .registration-summary-change.is-negative {
+  color: #c62828;
+}
+
+.registration-summary-note.MuiTypography-root {
+  margin-top: 0.4rem;
+  color: #5e6b7a;
+  font-size: 0.7rem;
+  line-height: 1.3;
 }
 
 .record-list {
@@ -1476,6 +1515,15 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .registration-summary-cards.summary-cards {
+    gap: 0.25rem;
+  }
+
+  .registration-summary-cards .card .MuiCardContent-root,
+  .registration-summary-cards .card .MuiCardContent-root:last-child {
+    padding: 0.35rem 0.15rem;
+  }
+
   .quantity-stepper {
     gap: 0.375rem;
   }
@@ -1637,14 +1685,26 @@ body {
 
 
 
-:root[data-theme='dark'] .calculated-total {
+:root[data-theme='dark'] .registration-summary {
   color: #edf2f7;
   background: #152638;
   border-color: #354e67;
 }
 
+:root[data-theme='dark'] .registration-summary-label,
+:root[data-theme='dark'] .registration-summary-note {
+  color: #b0becb;
+}
+
+:root[data-theme='dark'] .registration-summary-cards .card .registration-summary-change.is-positive {
+  color: #81c784;
+}
+
+:root[data-theme='dark'] .registration-summary-cards .card .registration-summary-change.is-negative {
+  color: #ef9a9a;
+}
+
 :root[data-theme='dark'] .record-total dd,
-:root[data-theme='dark'] .calculated-total strong,
 :root[data-theme='dark'] .auth-brand.MuiTypography-root {
   color: #90caf9;
 }

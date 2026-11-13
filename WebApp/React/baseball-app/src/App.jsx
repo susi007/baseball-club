@@ -1214,22 +1214,24 @@ function App({ darkMode, onDarkModeChange }) {
                     >
                       変更履歴
                     </Button>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      type="button"
-                      className="delete-button"
-                      onClick={() => {
-                        setDisposalError('')
-                        setDisposalTarget(item)
-                        setDisposalManager(
-                          item.equipment_assignments[0]?.manager ?? ''
-                        )
-                        setDisposalQuantity('1')
-                      }}
-                    >
-                      廃棄
-                    </Button>
+                    {isAdmin && (
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        type="button"
+                        className="delete-button"
+                        onClick={() => {
+                          setDisposalError('')
+                          setDisposalTarget(item)
+                          setDisposalManager(
+                            item.equipment_assignments[0]?.manager ?? ''
+                          )
+                          setDisposalQuantity('1')
+                        }}
+                      >
+                        廃棄
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>

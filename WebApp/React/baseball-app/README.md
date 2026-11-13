@@ -40,7 +40,7 @@
    <p>確認コード: {{ .Token }}</p>
    ```
 
-   メールプロバイダーの **Confirm email** が有効な場合は、**Confirm signup** テンプレートも同様に `{{ .Token }}` を表示する内容に変更してください。これらのテンプレートがリンク形式のままだと、メールには確認コードではなくログイン用URLが届きます。設定後、ログイン画面でメールに届いた6桁のコードを入力します。
+   メールプロバイダーの **Confirm email** が有効な場合は、**Confirm signup** テンプレートの本文も `supabase/templates/confirm_signup.html` の内容に変更してください。このテンプレートにはURLを含めず、確認コードだけを表示します。Supabase Dashboardのテンプレート設定はVercelへのデプロイでは反映されないため、Dashboardでも設定してください。設定後、ログイン画面でメールに届いた6桁のコードを入力します。
 7. 管理者アカウントをSupabase Authenticationに登録します。管理者を追加・削除するときは、`src/App.jsx`の`ADMIN_EMAILS`と`public.club_admins`テーブルのメールアドレスを一致させてください。テーブルの更新例は`supabase/migrations/admin_acount_operation.sql`を参照してください。管理者変更のために初期migrationを再実行する必要はありません。
 
 ## ローカルでの起動

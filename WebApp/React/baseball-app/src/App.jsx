@@ -46,6 +46,13 @@ function isBallCategory(category) {
   return BALL_CATEGORIES.includes(category)
 }
 
+function adjustQuantity(value, amount) {
+  const currentQuantity = Number(value)
+  if (!Number.isInteger(currentQuantity) || currentQuantity < 1) return '1'
+
+  return String(Math.min(2147483647, Math.max(1, currentQuantity + amount)))
+}
+
 function getSavedManagementTab() {
   const savedTab = window.sessionStorage.getItem(MANAGEMENT_TAB_KEY)
   return ['expense', 'equipment'].includes(savedTab) ? savedTab : 'income'
@@ -244,6 +251,10 @@ function App({ darkMode, onDarkModeChange }) {
   const [incomeName, setIncomeName] = useState('')
   const [incomeAmount, setIncomeAmount] = useState('')
   const [people, setPeople] = useState('1')
+  const [isIncomeRegistrationDialogOpen, setIsIncomeRegistrationDialogOpen] =
+    useState(false)
+  const [incomeRegistrationError, setIncomeRegistrationError] = useState('')
+  const [isSavingIncome, setIsSavingIncome] = useState(false)
 
   const [itemDate, setItemDate] = useState(getToday())
   const [name, setName] = useState('')
@@ -251,6 +262,9 @@ function App({ darkMode, onDarkModeChange }) {
   const [itemAmount, setItemAmount] = useState('')
   const [quantity, setQuantity] = useState('1')
   const [owner, setOwner] = useState('')
+  const [isInventoryRegistrationDialogOpen, setIsInventoryRegistrationDialogOpen] =
+    useState(false)
+  const [inventoryRegistrationError, setInventoryRegistrationError] = useState('')
   const [ballUnitCount, setBallUnitCount] = useState('1')
   const [ballUnitCountError, setBallUnitCountError] = useState('')
   const [isBallUnitCountDialogOpen, setIsBallUnitCountDialogOpen] =
@@ -401,7 +415,7 @@ function App({ darkMode, onDarkModeChange }) {
   // 収入登録
   async function handleIncomeSubmit(event) {
     event.preventDefault()
-    setError('')
+    setIncomeRegistrationError('')
 
     const data = {
       date: incomeDate,
@@ -410,6 +424,7 @@ function App({ darkMode, onDarkModeChange }) {
       people: Number(people),
     }
 
+    setIsSavingIncome(true)
     try {
       const { data: savedRecord, error: insertError } = await supabase
         .from('income')
@@ -425,16 +440,19 @@ function App({ darkMode, onDarkModeChange }) {
       setIncomeName('')
       setPeople('1')
       setIncomeDate(getToday())
+      setIsIncomeRegistrationDialogOpen(false)
       showSuccessMessage('収入を登録しました。')
     } catch (err) {
-      setError(err.message)
+      setIncomeRegistrationError(err.message)
+    } finally {
+      setIsSavingIncome(false)
     }
   }
 
   // 備品登録
   async function handleInventorySubmit(event) {
     event.preventDefault()
-    setError('')
+    setInventoryRegistrationError('')
 
     if (isBallCategory(category)) {
       let existingEquipment = equipmentItems.find(
@@ -450,7 +468,7 @@ function App({ darkMode, onDarkModeChange }) {
           if (equipmentLookupError) throw equipmentLookupError
           if (data?.category === category) existingEquipment = data
         } catch (err) {
-          setError(err.message)
+          setInventoryRegistrationError(err.message)
           return
         }
       }
@@ -459,6 +477,7 @@ function App({ darkMode, onDarkModeChange }) {
         String(existingEquipment?.balls_per_unit ?? 1)
       )
       setBallUnitCountError('')
+      setIsInventoryRegistrationDialogOpen(false)
       setIsBallUnitCountDialogOpen(true)
       return
     }
@@ -549,12 +568,13 @@ function App({ darkMode, onDarkModeChange }) {
       setBallUnitCount('1')
       setBallUnitCountError('')
       setIsBallUnitCountDialogOpen(false)
+      setIsInventoryRegistrationDialogOpen(false)
       if (!equipmentLoadError) showSuccessMessage('支出を登録しました。')
     } catch (err) {
       if (isBallCategory(category)) {
         setBallUnitCountError(err.message)
       } else {
-        setError(err.message)
+        setInventoryRegistrationError(err.message)
       }
     } finally {
       setIsSavingInventory(false)
@@ -877,17 +897,6 @@ function App({ darkMode, onDarkModeChange }) {
       const isSettled = item.settlement_status === 'settled'
       const statusLabel = isSettled ? '清算済み' : '立替'
       const nextStatusLabel = isSettled ? '立替' : '清算済み'
-      const mark = isSettled ? (
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="9" />
-          <path d="m8 12 2.5 2.5L16.5 9" />
-        </svg>
-      ) : (
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="9" />
-          <path d="M8 8h8M8 11h8m-7 5 3-4 3 4m-3-4v7" />
-        </svg>
-      )
 
       return isAdmin ? (
         <Tooltip
@@ -902,18 +911,22 @@ function App({ darkMode, onDarkModeChange }) {
               disabled={isSavingExpenseStatus}
               size="small"
             >
-              {mark}
+              <span>{statusLabel}</span>
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M4 12a8 8 0 0 1 8-8h4" />
+                <path d="M13 0.5 18 4l-5 3.5z" fill="currentColor" stroke="none" />
+                <path d="M20 12a8 8 0 0 1-8 8H8" />
+                <path d="M11 16.5 6 20l5 3.5z" fill="currentColor" stroke="none" />
+              </svg>
             </IconButton>
           </span>
         </Tooltip>
       ) : (
         <span
           className={`expense-status-mark ${isSettled ? 'is-settled' : 'is-reimbursement'}`}
-          role="img"
-          aria-label={statusLabel}
           title={statusLabel}
         >
-          {mark}
+          {statusLabel}
         </span>
       )
     }
@@ -1470,7 +1483,17 @@ function App({ darkMode, onDarkModeChange }) {
         <section
           className={`summary-section${isSummaryCompact ? ' is-compact' : ''}`}
         >
-          <Typography component="h2" variant="h6">収支状況</Typography>
+          <Tabs
+            className="management-tabs"
+            value={activeManagementTab}
+            onChange={(_event, value) => setActiveManagementTab(value)}
+            aria-label="管理項目"
+            variant="fullWidth"
+          >
+            <Tab id="income-tab" aria-controls="income-panel" value="income" label="収入管理" />
+            <Tab id="expense-tab" aria-controls="expense-panel" value="expense" label="支出管理" />
+            <Tab id="equipment-tab" aria-controls="equipment-panel" value="equipment" label="備品管理" />
+          </Tabs>
           <div className="summary-cards">
             {[
               { label: '収入', value: totalIncome, color: 'primary' },
@@ -1491,18 +1514,6 @@ function App({ darkMode, onDarkModeChange }) {
           </div>
         </section>
 
-        <Tabs
-          className="management-tabs"
-          value={activeManagementTab}
-          onChange={(_event, value) => setActiveManagementTab(value)}
-          aria-label="管理項目"
-          variant="fullWidth"
-        >
-          <Tab id="income-tab" aria-controls="income-panel" value="income" label="収入管理" />
-          <Tab id="expense-tab" aria-controls="expense-panel" value="expense" label="支出管理" />
-          <Tab id="equipment-tab" aria-controls="equipment-panel" value="equipment" label="備品管理" />
-        </Tabs>
-
         <Paper
           elevation={0}
           className="management-area income-area"
@@ -1515,64 +1526,18 @@ function App({ darkMode, onDarkModeChange }) {
           {isAdmin && (
           <section className="management-panel">
             <Typography component="h3" variant="h6">収入登録</Typography>
-            <form onSubmit={handleIncomeSubmit} className="app-form">
-              <label>
-                日付
-                <input
-                  type="date"
-                  value={incomeDate}
-                  onChange={(event) => setIncomeDate(event.target.value)}
-                  required
-                />
-              </label>
-
-              <label>
-                名目
-                <input
-                  type="text"
-                  value={incomeName}
-                  onChange={(event) => setIncomeName(event.target.value)}
-                  placeholder="例：部費"
-                  required
-                />
-              </label>
-
-              <label>
-                1人あたりの金額（円）
-                <input
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={incomeAmount}
-                  onChange={(event) => setIncomeAmount(event.target.value)}
-                  placeholder="例：1000"
-                  required
-                />
-              </label>
-
-              <label>
-                人数
-                <input
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={people}
-                  onChange={(event) => setPeople(event.target.value)}
-                  required
-                />
-              </label>
-
-              <output className="calculated-total">
-                <span>登録予定金額</span>
-                <strong>
-                  ¥{(
-                    (Number(incomeAmount) || 0) * (Number(people) || 0)
-                  ).toLocaleString()}
-                </strong>
-              </output>
-
-              <Button type="submit" variant="contained">収入を登録</Button>
-            </form>
+            <Button
+              variant="contained"
+              type="button"
+              className="registration-open-button"
+              aria-haspopup="dialog"
+              onClick={() => {
+                setIncomeRegistrationError('')
+                setIsIncomeRegistrationDialogOpen(true)
+              }}
+            >
+              収入を登録
+            </Button>
           </section>
           )}
 
@@ -1654,97 +1619,18 @@ function App({ darkMode, onDarkModeChange }) {
           {isAdmin && (
           <section className="management-panel">
             <Typography component="h3" variant="h6">支出登録</Typography>
-
-            <form onSubmit={handleInventorySubmit} className="app-form">
-              <label>
-                日付
-                <input
-                  type="date"
-                  value={itemDate}
-                  onChange={(event) => setItemDate(event.target.value)}
-                  required
-                />
-              </label>
-
-              <label>
-                名前
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="備品の名前"
-                  required
-                />
-              </label>
-
-              <label>
-                カテゴリー
-                <select
-                  value={category}
-                  onChange={(event) => setCategory(event.target.value)}
-                  required
-                >
-                  <option value="">カテゴリーを選択</option>
-                  {categories.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label>
-                購入額（円）
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={itemAmount}
-                  onChange={(event) => setItemAmount(event.target.value)}
-                  placeholder="例：1500"
-                  required
-                />
-              </label>
-
-              <label>
-                個数
-                <input
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={quantity}
-                  onChange={(event) => setQuantity(event.target.value)}
-                  required
-                />
-              </label>
-
-              <label>
-                購入者
-                <select
-                  value={owner}
-                  onChange={(event) => setOwner(event.target.value)}
-                  required
-                >
-                  <option value="">ニックネームを選択</option>
-                  {ownerOptions.map((person) => (
-                    <option key={person} value={person}>
-                      {person}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <output className="calculated-total">
-                <span>購入合計金額</span>
-                <strong>
-                  ¥{(
-                    (Number(itemAmount) || 0) * (Number(quantity) || 0)
-                  ).toLocaleString()}
-                </strong>
-              </output>
-
-              <Button type="submit" variant="contained">支出を登録</Button>
-            </form>
+            <Button
+              variant="contained"
+              type="button"
+              className="registration-open-button"
+              aria-haspopup="dialog"
+              onClick={() => {
+                setInventoryRegistrationError('')
+                setIsInventoryRegistrationDialogOpen(true)
+              }}
+            >
+              支出を登録
+            </Button>
           </section>
           )}
 
@@ -1762,6 +1648,231 @@ function App({ darkMode, onDarkModeChange }) {
         >
           {renderEquipmentList()}
         </Paper>
+
+        {isIncomeRegistrationDialogOpen && (
+          <div className="modal-overlay">
+            <form
+              className="delete-modal edit-modal registration-modal app-form registration-form"
+              onSubmit={handleIncomeSubmit}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="income-registration-title"
+            >
+              <h2 id="income-registration-title">収入登録</h2>
+              {incomeRegistrationError && (
+                <Alert severity="error" role="alert" sx={{ gridColumn: '1 / -1' }}>
+                  {incomeRegistrationError}
+                </Alert>
+              )}
+              <input
+                type="date"
+                aria-label="日付"
+                value={incomeDate}
+                onChange={(event) => setIncomeDate(event.target.value)}
+                required
+                autoFocus
+              />
+              <label>
+                名目
+                <input
+                  type="text"
+                  value={incomeName}
+                  onChange={(event) => setIncomeName(event.target.value)}
+                  placeholder="例：部費"
+                  required
+                />
+              </label>
+              <label>
+                1人あたりの金額（円）
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={incomeAmount}
+                  onChange={(event) => setIncomeAmount(event.target.value)}
+                  placeholder="例：1000"
+                  required
+                />
+              </label>
+              <label>
+                人数
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={people}
+                  onChange={(event) => setPeople(event.target.value)}
+                  required
+                />
+              </label>
+              <output className="calculated-total">
+                <span>登録予定金額</span>
+                <strong>
+                  ¥{(
+                    (Number(incomeAmount) || 0) * (Number(people) || 0)
+                  ).toLocaleString()}
+                </strong>
+              </output>
+              <div className="modal-actions">
+                <Button
+                  variant="outlined"
+                  type="button"
+                  className="cancel-button"
+                  onClick={() => setIsIncomeRegistrationDialogOpen(false)}
+                  disabled={isSavingIncome}
+                >
+                  キャンセル
+                </Button>
+                <Button
+                  variant="contained"
+                  type="submit"
+                  className="save-button"
+                  disabled={isSavingIncome}
+                >
+                  {isSavingIncome ? '登録中...' : '登録する'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {isInventoryRegistrationDialogOpen && (
+          <div className="modal-overlay">
+            <form
+              className="delete-modal edit-modal registration-modal app-form registration-form"
+              onSubmit={handleInventorySubmit}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="inventory-registration-title"
+            >
+              <h2 id="inventory-registration-title">支出登録</h2>
+              {inventoryRegistrationError && (
+                <Alert severity="error" role="alert" sx={{ gridColumn: '1 / -1' }}>
+                  {inventoryRegistrationError}
+                </Alert>
+              )}
+              <input
+                type="date"
+                aria-label="日付"
+                value={itemDate}
+                onChange={(event) => setItemDate(event.target.value)}
+                required
+                autoFocus
+              />
+              <input
+                type="text"
+                aria-label="備品の名前"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="備品の名前"
+                required
+              />
+              <select
+                aria-label="カテゴリー"
+                value={category}
+                onChange={(event) => setCategory(event.target.value)}
+                required
+              >
+                <option value="">カテゴリーを選択</option>
+                {categories.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+              <div className="form-prefix-field">
+                <span aria-hidden="true">購入額（円）</span>
+                <input
+                  type="number"
+                  aria-label="購入額（円）"
+                  min="0"
+                  step="1"
+                  value={itemAmount}
+                  onChange={(event) => setItemAmount(event.target.value)}
+                  required
+                />
+              </div>
+              <div className="quantity-stepper">
+                <button
+                  type="button"
+                  className="quantity-stepper-button"
+                  aria-label="個数を1減らす"
+                  onClick={() =>
+                    setQuantity((current) => adjustQuantity(current, -1))
+                  }
+                  disabled={Number(quantity) <= 1}
+                >
+                  -
+                </button>
+                <div className="form-prefix-field">
+                  <span aria-hidden="true">個数：</span>
+                  <input
+                    type="number"
+                    aria-label="個数"
+                    min="1"
+                    max="2147483647"
+                    step="1"
+                    className="quantity-stepper-input"
+                    value={quantity}
+                    onChange={(event) => setQuantity(event.target.value)}
+                    required
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="quantity-stepper-button"
+                  aria-label="個数を1増やす"
+                  onClick={() =>
+                    setQuantity((current) => adjustQuantity(current, 1))
+                  }
+                  disabled={Number(quantity) >= 2147483647}
+                >
+                  +
+                </button>
+              </div>
+              <select
+                aria-label="購入者"
+                value={owner}
+                onChange={(event) => setOwner(event.target.value)}
+                required
+              >
+                <option value="">購入者を選択</option>
+                {ownerOptions.map((person) => (
+                  <option key={person} value={person}>
+                    {person}
+                  </option>
+                ))}
+              </select>
+              <output className="calculated-total">
+                <span>購入合計金額</span>
+                <strong>
+                  ¥{(
+                    (Number(itemAmount) || 0) * (Number(quantity) || 0)
+                  ).toLocaleString()}
+                </strong>
+              </output>
+              <div className="modal-actions">
+                <Button
+                  variant="outlined"
+                  type="button"
+                  className="cancel-button"
+                  onClick={() => setIsInventoryRegistrationDialogOpen(false)}
+                  disabled={isSavingInventory}
+                >
+                  キャンセル
+                </Button>
+                <Button
+                  variant="contained"
+                  type="submit"
+                  className="save-button"
+                  disabled={isSavingInventory}
+                >
+                  {isSavingInventory ? '登録中...' : '登録する'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        )}
 
         {isBallUnitCountDialogOpen && (
           <div className="modal-overlay">
@@ -1810,7 +1921,10 @@ function App({ darkMode, onDarkModeChange }) {
                   variant="outlined"
                   type="button"
                   className="cancel-button"
-                  onClick={() => setIsBallUnitCountDialogOpen(false)}
+                  onClick={() => {
+                    setIsBallUnitCountDialogOpen(false)
+                    setIsInventoryRegistrationDialogOpen(true)
+                  }}
                   disabled={isSavingInventory}
                 >
                   キャンセル
@@ -2285,20 +2399,18 @@ function App({ darkMode, onDarkModeChange }) {
               )}
 
               <div className="edit-form-fields">
-                <label>
-                  日付
-                  <input
-                    type="date"
-                    value={editForm.date}
-                    onChange={(event) =>
-                      setEditForm((current) => ({
-                        ...current,
-                        date: event.target.value,
-                      }))
-                    }
-                    required
-                  />
-                </label>
+                <input
+                  type="date"
+                  aria-label="日付"
+                  value={editForm.date}
+                  onChange={(event) =>
+                    setEditForm((current) => ({
+                      ...current,
+                      date: event.target.value,
+                    }))
+                  }
+                  required
+                />
 
                 {editTarget.type === 'income' ? (
                   <>
@@ -2351,44 +2463,42 @@ function App({ darkMode, onDarkModeChange }) {
                   </>
                 ) : (
                   <>
-                    <label>
-                      名前
-                      <input
-                        type="text"
-                        value={editForm.name}
-                        onChange={(event) =>
-                          setEditForm((current) => ({
-                            ...current,
-                            name: event.target.value,
-                          }))
-                        }
-                        required
-                      />
-                    </label>
-                    <label>
-                      カテゴリー
-                      <select
-                        value={editForm.category}
-                        onChange={(event) =>
-                          setEditForm((current) => ({
-                            ...current,
-                            category: event.target.value,
-                          }))
-                        }
-                        required
-                      >
-                        <option value="">カテゴリーを選択</option>
-                        {categories.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      購入額（円）
+                    <input
+                      type="text"
+                      aria-label="備品の名前"
+                      value={editForm.name}
+                      onChange={(event) =>
+                        setEditForm((current) => ({
+                          ...current,
+                          name: event.target.value,
+                        }))
+                      }
+                      placeholder="備品の名前"
+                      required
+                    />
+                    <select
+                      aria-label="カテゴリー"
+                      value={editForm.category}
+                      onChange={(event) =>
+                        setEditForm((current) => ({
+                          ...current,
+                          category: event.target.value,
+                        }))
+                      }
+                      required
+                    >
+                      <option value="">カテゴリーを選択</option>
+                      {categories.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="form-prefix-field">
+                      <span aria-hidden="true">購入額（円）</span>
                       <input
                         type="number"
+                        aria-label="購入額（円）"
                         min="0"
                         step="1"
                         value={editForm.amount}
@@ -2400,47 +2510,78 @@ function App({ darkMode, onDarkModeChange }) {
                         }
                         required
                       />
-                    </label>
-                    <label>
-                      個数
-                      <input
-                        type="number"
-                        min="1"
-                        step="1"
-                        value={editForm.quantity}
-                        onChange={(event) =>
+                    </div>
+                    <div className="quantity-stepper">
+                      <button
+                        type="button"
+                        className="quantity-stepper-button"
+                        aria-label="個数を1減らす"
+                        onClick={() =>
                           setEditForm((current) => ({
                             ...current,
-                            quantity: event.target.value,
+                            quantity: adjustQuantity(current.quantity, -1),
                           }))
                         }
-                        required
-                      />
-                    </label>
-                    <label>
-                      購入者
-                      <select
-                        value={editForm.owner}
-                        onChange={(event) =>
-                          setEditForm((current) => ({
-                            ...current,
-                            owner: event.target.value,
-                          }))
-                        }
-                        required
+                        disabled={Number(editForm.quantity) <= 1}
                       >
-                        {!ownerOptions.includes(editForm.owner) && (
-                          <option value={editForm.owner}>
-                            {editForm.owner}
-                          </option>
-                        )}
-                        {ownerOptions.map((person) => (
-                          <option key={person} value={person}>
-                            {person}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                        -
+                      </button>
+                      <div className="form-prefix-field">
+                        <span aria-hidden="true">個数：</span>
+                        <input
+                          type="number"
+                          aria-label="個数"
+                          min="1"
+                          max="2147483647"
+                          step="1"
+                          className="quantity-stepper-input"
+                          value={editForm.quantity}
+                          onChange={(event) =>
+                            setEditForm((current) => ({
+                              ...current,
+                              quantity: event.target.value,
+                            }))
+                          }
+                          required
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        className="quantity-stepper-button"
+                        aria-label="個数を1増やす"
+                        onClick={() =>
+                          setEditForm((current) => ({
+                            ...current,
+                            quantity: adjustQuantity(current.quantity, 1),
+                          }))
+                        }
+                        disabled={Number(editForm.quantity) >= 2147483647}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <select
+                      aria-label="購入者"
+                      value={editForm.owner}
+                      onChange={(event) =>
+                        setEditForm((current) => ({
+                          ...current,
+                          owner: event.target.value,
+                        }))
+                      }
+                      required
+                    >
+                      {!ownerOptions.includes(editForm.owner) && (
+                        <option value={editForm.owner}>
+                          {editForm.owner}
+                        </option>
+                      )}
+                      {ownerOptions.map((person) => (
+                        <option key={person} value={person}>
+                          {person}
+                        </option>
+                      ))}
+                    </select>
                   </>
                 )}
               </div>

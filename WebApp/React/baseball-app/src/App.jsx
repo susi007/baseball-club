@@ -1333,6 +1333,25 @@ function App({ darkMode, onDarkModeChange }) {
     disposalTarget?.equipment_assignments.find(
       (assignment) => assignment.manager === disposalManager
     )?.quantity ?? 0
+  const editIncomeChange =
+    editTarget?.type === 'income'
+      ? (Number(editForm.amount) || 0) * (Number(editForm.people) || 0) -
+        Number(editTarget.item.amount) * Number(editTarget.item.people)
+      : 0
+  const editedExpenseTotal =
+    (Number(editForm.amount) || 0) * (Number(editForm.quantity) || 0)
+  const editExpenseChange =
+    editTarget?.type === 'inventory'
+      ? editTarget.item.settlement_status === 'settled'
+        ? editedExpenseTotal -
+          Number(editTarget.item.amount) * Number(editTarget.item.quantity)
+        : editedExpenseTotal
+      : 0
+  const editSummaryNote =
+    editTarget?.type === 'inventory' &&
+    editTarget.item.settlement_status !== 'settled'
+      ? '立替分は清算後に収支へ反映されます。'
+      : ''
 
   if (authLoading) {
     return (
@@ -2497,67 +2516,82 @@ function App({ darkMode, onDarkModeChange }) {
               )}
 
               <div className="edit-form-fields">
-                <input
-                  type="date"
-                  aria-label="日付"
-                  value={editForm.date}
-                  onChange={(event) =>
-                    setEditForm((current) => ({
-                      ...current,
-                      date: event.target.value,
-                    }))
-                  }
-                  required
-                />
+                {editTarget.type === 'income' ? (
+                  <div className="form-prefix-field edit-date-field">
+                    <span aria-hidden="true">日付</span>
+                    <input
+                      type="date"
+                      aria-label="日付"
+                      value={editForm.date}
+                      onChange={(event) =>
+                        setEditForm((current) => ({
+                          ...current,
+                          date: event.target.value,
+                        }))
+                      }
+                      required
+                    />
+                  </div>
+                ) : (
+                  <input
+                    type="date"
+                    aria-label="日付"
+                    value={editForm.date}
+                    onChange={(event) =>
+                      setEditForm((current) => ({
+                        ...current,
+                        date: event.target.value,
+                      }))
+                    }
+                    required
+                  />
+                )}
 
                 {editTarget.type === 'income' ? (
                   <>
-                    <label>
-                      名目
-                      <input
-                        type="text"
-                        value={editForm.name}
-                        onChange={(event) =>
-                          setEditForm((current) => ({
-                            ...current,
-                            name: event.target.value,
-                          }))
-                        }
-                        required
-                      />
-                    </label>
-                    <label>
-                      1人あたりの金額（円）
-                      <input
-                        type="number"
-                        min="1"
-                        step="1"
-                        value={editForm.amount}
-                        onChange={(event) =>
-                          setEditForm((current) => ({
-                            ...current,
-                            amount: event.target.value,
-                          }))
-                        }
-                        required
-                      />
-                    </label>
-                    <label>
-                      人数
-                      <input
-                        type="number"
-                        min="1"
-                        step="1"
-                        value={editForm.people}
-                        onChange={(event) =>
-                          setEditForm((current) => ({
-                            ...current,
-                            people: event.target.value,
-                          }))
-                        }
-                        required
-                      />
-                    </label>
+                    <input
+                      type="text"
+                      aria-label="名目"
+                      placeholder="名目"
+                      value={editForm.name}
+                      onChange={(event) =>
+                        setEditForm((current) => ({
+                          ...current,
+                          name: event.target.value,
+                        }))
+                      }
+                      required
+                    />
+                    <input
+                      type="number"
+                      aria-label="1人あたりの金額（円）"
+                      placeholder="1人あたりの金額（円）"
+                      min="1"
+                      step="1"
+                      value={editForm.amount}
+                      onChange={(event) =>
+                        setEditForm((current) => ({
+                          ...current,
+                          amount: event.target.value,
+                        }))
+                      }
+                      required
+                    />
+                    <input
+                      type="number"
+                      aria-label="人数"
+                      placeholder="人数"
+                      min="1"
+                      step="1"
+                      value={editForm.people}
+                      onChange={(event) =>
+                        setEditForm((current) => ({
+                          ...current,
+                          people: event.target.value,
+                        }))
+                      }
+                      required
+                    />
                   </>
                 ) : (
                   <>
@@ -2683,6 +2717,12 @@ function App({ darkMode, onDarkModeChange }) {
                   </>
                 )}
               </div>
+
+              {renderRegistrationSummary(
+                editIncomeChange,
+                editExpenseChange,
+                editSummaryNote
+              )}
 
               <div className="modal-actions">
                 <Button

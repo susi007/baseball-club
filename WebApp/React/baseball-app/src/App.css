@@ -1058,6 +1058,10 @@ body {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+.edit-form-fields .edit-date-field {
+  margin-top: 0;
+}
+
 .form-prefix-field:focus-within {
   border-color: var(--form-focus);
   box-shadow: 0 0 0 3px var(--form-focus-ring);

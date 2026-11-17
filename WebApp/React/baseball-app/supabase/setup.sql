@@ -1585,6 +1585,7 @@ REVOKE ALL ON FUNCTION public.add_purchased_equipment() FROM PUBLIC;
 
 -- -----------------------------------------------------------------------------
 -- Source: migrations\20261112111500_manage_actual_ball_counts.sql
+-- Includes the assignment-total check from 20261117000000.
 -- -----------------------------------------------------------------------------
 DROP FUNCTION IF EXISTS public.save_equipment_assignments(bigint, date, integer, jsonb);
 
@@ -1700,6 +1701,16 @@ BEGIN
     )
     INTO v_after
     FROM jsonb_array_elements(p_assignments) AS entry(value);
+
+    IF (
+        SELECT COALESCE(sum((entry.value ->> 'quantity')::bigint), 0)
+        FROM jsonb_array_elements(v_before) AS entry(value)
+    ) <> (
+        SELECT COALESCE(sum((entry.value ->> 'quantity')::bigint), 0)
+        FROM jsonb_array_elements(v_after) AS entry(value)
+    ) THEN
+        RAISE EXCEPTION '管理者への割当数の合計を備品の合計数と一致させてください。最新の備品情報を確認してください。';
+    END IF;
 
     IF v_before IS DISTINCT FROM v_after
        OR v_equipment.changed_on IS DISTINCT FROM p_changed_on THEN

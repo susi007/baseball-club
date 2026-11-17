@@ -794,6 +794,10 @@ function App({ darkMode, onDarkModeChange }) {
       setEquipmentError('個数は1以上2,147,483,647以下の整数を入力してください。')
       return
     }
+    if (equipmentAssignedQuantity !== getEquipmentQuantities(equipmentTarget).totalQuantity) {
+      setEquipmentError('管理者への割当数の合計を備品の合計数と一致させてください。')
+      return
+    }
     setEquipmentError('')
     setIsSavingEquipment(true)
     try {
@@ -808,6 +812,12 @@ function App({ darkMode, onDarkModeChange }) {
           })),
         }
       )
+      if (saveError?.code === 'PGRST202') {
+        console.error('備品の管理情報を保存できませんでした。', saveError)
+        throw new Error(
+          '備品の保存に必要なデータベース設定が見つかりません。設定を更新してから再度お試しください。'
+        )
+      }
       if (saveError) throw saveError
 
       const { data, error: loadError } = await supabase
@@ -2073,9 +2083,9 @@ function App({ darkMode, onDarkModeChange }) {
               </h2>
               <p className="equipment-quantity-summary">
                 {isBallCategory(equipmentTarget.category)
-                  ? '実球数合計'
-                  : '管理者割当合計'}
-                : {equipmentAssignedQuantity}
+                  ? '割当球数'
+                  : '割当個数'}
+                : {equipmentAssignedQuantity} / {getEquipmentQuantities(equipmentTarget).totalQuantity}
                 {isBallCategory(equipmentTarget.category) ? '球' : '個'}
               </p>
               {equipmentError && (

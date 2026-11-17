@@ -4,6 +4,7 @@
 
 ## 主な変更内容
 
+- ヘッダーの上にお知らせを1件表示します。管理者のみ編集でき、空欄で保存すると非表示になります。
 - 収入に名目を登録・表示できるようにしました。
 - 支出一覧に「立替」または「清算済み」を表示し、管理者は循環矢印付きのボタンでステータスを切り替えられます。
 - 支出一覧はステータス（すべて・立替・清算済み）で絞り込めます。
@@ -27,6 +28,7 @@
    廃棄済み備品の過去履歴を消去する更新は、`supabase/migrations/20261112131000_clear_equipment_history_on_disposal.sql`です。
    ボール以外の備品も管理者別に数量を指定して廃棄する更新は、`supabase/migrations/20261112140000_dispose_equipment_by_manager_quantity.sql`です。
    管理者への割当合計を維持する更新は、`supabase/migrations/20261117000000_preserve_equipment_assignment_totals.sql`です。
+   お知らせ機能を追加する更新は、`supabase/migrations/20261117010000_create_announcement.sql`です。
 3. `supabase/migrations/admin_acount_operation.sql`は管理者の追加・削除・確認用の例であり、初期セットアップには含めません。必要な操作だけをSQL Editorで実行してください。
 4. このフォルダで`.env.example`を`.env.local`にコピーし、SupabaseプロジェクトのURLとPublishable Keyを設定します。
    ```dotenv

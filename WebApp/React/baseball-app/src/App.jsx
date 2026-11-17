@@ -124,6 +124,11 @@ function App({ darkMode, onDarkModeChange }) {
   const [isAccountInfoVisible, setIsAccountInfoVisible] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
   const successMessageTimer = useRef(null)
+  const [announcementState, setAnnouncementState] = useState(null)
+  const [isAnnouncementEditorOpen, setIsAnnouncementEditorOpen] = useState(false)
+  const [announcementDraft, setAnnouncementDraft] = useState('')
+  const [announcementError, setAnnouncementError] = useState('')
+  const [isSavingAnnouncement, setIsSavingAnnouncement] = useState(false)
 
   const isAdmin = ADMIN_EMAILS.includes(user?.email?.toLowerCase())
 
@@ -147,6 +152,39 @@ function App({ darkMode, onDarkModeChange }) {
     },
     []
   )
+
+  useEffect(() => {
+    if (!user) return
+
+    let cancelled = false
+
+    async function loadAnnouncement() {
+      try {
+        const { data, error: loadError } = await supabase
+          .from('announcement')
+          .select('content')
+          .eq('id', 1)
+          .single()
+        if (loadError) throw loadError
+        if (!cancelled) {
+          setAnnouncementState({ userId: user.id, content: data.content, error: '' })
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setAnnouncementState({
+            userId: user.id,
+            content: '',
+            error: `お知らせを読み込めませんでした。${err.message}`,
+          })
+        }
+      }
+    }
+
+    loadAnnouncement()
+    return () => {
+      cancelled = true
+    }
+  }, [user])
 
   useEffect(() => {
     if (!user) return
@@ -367,6 +405,31 @@ function App({ darkMode, onDarkModeChange }) {
       setSuccessMessage('')
       successMessageTimer.current = null
     }, 3000)
+  }
+
+  async function handleAnnouncementSubmit(event) {
+    event.preventDefault()
+    if (!isAdmin || isSavingAnnouncement) return
+
+    setAnnouncementError('')
+    setIsSavingAnnouncement(true)
+    try {
+      const { data, error: saveError } = await supabase
+        .from('announcement')
+        .update({ content: announcementDraft.trim() })
+        .eq('id', 1)
+        .select('content')
+        .single()
+      if (saveError) throw saveError
+
+      setAnnouncementState({ userId: user.id, content: data.content, error: '' })
+      setIsAnnouncementEditorOpen(false)
+      showSuccessMessage('お知らせを保存しました。')
+    } catch (err) {
+      setAnnouncementError(`お知らせを保存できませんでした。${err.message}`)
+    } finally {
+      setIsSavingAnnouncement(false)
+    }
   }
 
   async function handleExpenseStatusChange(item) {
@@ -1497,8 +1560,39 @@ function App({ darkMode, onDarkModeChange }) {
     )
   }
 
+  const announcement =
+    announcementState?.userId === user.id ? announcementState : null
+
   return (
     <div className="app">
+      {announcement && (announcement.content || announcement.error || isAdmin) && (
+        <aside className="announcement" aria-labelledby="announcement-title">
+          <div className="announcement-content">
+            <h2 id="announcement-title">お知らせ</h2>
+            {announcement.error ? (
+              <Alert severity="error" role="alert">{announcement.error}</Alert>
+            ) : announcement.content ? (
+              <p>{announcement.content}</p>
+            ) : (
+              <p>お知らせはありません。</p>
+            )}
+          </div>
+          {isAdmin && !announcement.error && (
+            <Button
+              variant="outlined"
+              size="small"
+              type="button"
+              onClick={() => {
+                setAnnouncementDraft(announcement.content)
+                setAnnouncementError('')
+                setIsAnnouncementEditorOpen(true)
+              }}
+            >
+              お知らせを編集
+            </Button>
+          )}
+        </aside>
+      )}
       <header className="header">
         <div className="header-brand">
           <Typography component="h1" variant="h4">支出管理リスト</Typography>
@@ -1759,6 +1853,54 @@ function App({ darkMode, onDarkModeChange }) {
         >
           {renderEquipmentList()}
         </Paper>
+
+        {isAnnouncementEditorOpen && isAdmin && (
+          <div className="modal-overlay">
+            <form
+              className="delete-modal edit-modal"
+              onSubmit={handleAnnouncementSubmit}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="announcement-edit-title"
+            >
+              <h2 id="announcement-edit-title">お知らせを編集</h2>
+              {announcementError && (
+                <Alert severity="error" role="alert" sx={{ mb: 2 }}>
+                  {announcementError}
+                </Alert>
+              )}
+              <TextField
+                label="お知らせ"
+                multiline
+                minRows={4}
+                fullWidth
+                value={announcementDraft}
+                onChange={(event) => setAnnouncementDraft(event.target.value)}
+                helperText="空欄で保存するとお知らせを非表示にします。"
+                autoFocus
+              />
+              <div className="modal-actions">
+                <Button
+                  variant="outlined"
+                  type="button"
+                  className="cancel-button"
+                  onClick={() => setIsAnnouncementEditorOpen(false)}
+                  disabled={isSavingAnnouncement}
+                >
+                  キャンセル
+                </Button>
+                <Button
+                  variant="contained"
+                  type="submit"
+                  className="save-button"
+                  disabled={isSavingAnnouncement}
+                >
+                  {isSavingAnnouncement ? '保存中...' : '保存'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        )}
 
         {isIncomeRegistrationDialogOpen && (
           <div className="modal-overlay">

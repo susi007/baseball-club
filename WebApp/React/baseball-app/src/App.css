@@ -887,6 +887,38 @@ body {
   background: #f5f7fb;
 }
 
+.announcement {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem;
+  color: #1b2533;
+  background: #e8f2fd;
+  border-bottom: 1px solid #c5dcf4;
+}
+
+.announcement-content {
+  min-width: 0;
+}
+
+.announcement h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.announcement p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.announcement .MuiButton-root {
+  flex-shrink: 0;
+}
+
 .header {
   display: flex;
   justify-content: space-between;
@@ -1492,6 +1524,12 @@ body {
 }
 
 @media (max-width: 767px) {
+  .announcement {
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+  }
+
   .header {
     align-items: flex-start;
     flex-direction: column;
@@ -1648,6 +1686,12 @@ body {
 :root[data-theme='dark'] .header {
   border-bottom-color: #354454;
   box-shadow: 0 2px 8px rgb(0 0 0 / 18%);
+}
+
+:root[data-theme='dark'] .announcement {
+  color: #edf2f7;
+  background: #233c52;
+  border-color: #354e64;
 }
 
 :root[data-theme='dark'] .header h1,

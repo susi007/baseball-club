@@ -1565,34 +1565,6 @@ function App({ darkMode, onDarkModeChange }) {
 
   return (
     <div className="app">
-      {announcement && (announcement.content || announcement.error || isAdmin) && (
-        <aside className="announcement" aria-labelledby="announcement-title">
-          <div className="announcement-content">
-            <h2 id="announcement-title">お知らせ</h2>
-            {announcement.error ? (
-              <Alert severity="error" role="alert">{announcement.error}</Alert>
-            ) : announcement.content ? (
-              <p>{announcement.content}</p>
-            ) : (
-              <p>お知らせはありません。</p>
-            )}
-          </div>
-          {isAdmin && !announcement.error && (
-            <Button
-              variant="outlined"
-              size="small"
-              type="button"
-              onClick={() => {
-                setAnnouncementDraft(announcement.content)
-                setAnnouncementError('')
-                setIsAnnouncementEditorOpen(true)
-              }}
-            >
-              お知らせを編集
-            </Button>
-          )}
-        </aside>
-      )}
       <header className="header">
         <div className="header-brand">
           <Typography component="h1" variant="h4">支出管理リスト</Typography>
@@ -1681,6 +1653,35 @@ function App({ darkMode, onDarkModeChange }) {
           </Button>
         </div>
       </header>
+
+      {announcement && (announcement.content || announcement.error || isAdmin) && (
+        <aside className="announcement" aria-labelledby="announcement-title">
+          <div className="announcement-content">
+            <h2 id="announcement-title">お知らせ</h2>
+            {announcement.error ? (
+              <Alert severity="error" role="alert">{announcement.error}</Alert>
+            ) : announcement.content ? (
+              <p>{announcement.content}</p>
+            ) : (
+              <p>お知らせはありません。</p>
+            )}
+          </div>
+          {isAdmin && !announcement.error && (
+            <Button
+              variant="outlined"
+              size="small"
+              type="button"
+              onClick={() => {
+                setAnnouncementDraft(announcement.content)
+                setAnnouncementError('')
+                setIsAnnouncementEditorOpen(true)
+              }}
+            >
+              お知らせを編集
+            </Button>
+          )}
+        </aside>
+      )}
 
       <main className="main">
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}

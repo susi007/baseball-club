@@ -135,6 +135,8 @@ input {
   max-width: 1200px;
   margin: 0 auto;
   padding: 1.5rem 1rem 3rem;
+  /* The sticky summary changes height at a scroll threshold. */
+  overflow-anchor: none;
 }
 
 section {
